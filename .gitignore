@@ -1,0 +1,19 @@
+# Dependencias (se reinstalan con npm install)
+node_modules/
+
+# Variables de entorno con contraseñas (nunca se suben)
+.env
+.env.*
+!.env.example
+
+# Build del frontend
+dist/
+
+# Registros
+*.log
+
+# Archivos del sistema y del editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json

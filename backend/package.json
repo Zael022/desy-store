@@ -1,0 +1,29 @@
+{
+  "name": "inventario-bisuteria-backend",
+  "version": "1.0.0",
+  "description": "API REST del sistema de inventario para una tienda de bisutería y accesorios",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node database/seed.js",
+    "probar-api": "node pruebas/probar-api.js",
+    "lint": "eslint ."
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^5.3.0",
+    "mysql2": "^3.24.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "globals": "^17.14.0"
+  }
+}
