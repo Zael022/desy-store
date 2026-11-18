@@ -78,6 +78,13 @@ export async function eliminarProveedor(req, res, next) {
     if (totalProductos > 0) {
       throw new ErrorHttp(409, `No se puede eliminar el proveedor "${proveedor.nombre}" porque tiene ${totalProductos} producto(s) asociado(s).`);
     }
+    const vinculos = await proveedorModel.contarVinculos(id);
+    if (vinculos.cuentas > 0) {
+      throw new ErrorHttp(409, `No se puede eliminar el proveedor "${proveedor.nombre}" porque tiene una cuenta de usuario. Desactive la cuenta en Usuarios.`);
+    }
+    if (vinculos.solicitudes > 0) {
+      throw new ErrorHttp(409, `No se puede eliminar el proveedor "${proveedor.nombre}" porque tiene ${vinculos.solicitudes} solicitud(es) de abastecimiento.`);
+    }
     await proveedorModel.eliminar(id);
     res.status(200).json({ message: 'Proveedor eliminado correctamente.', id });
   } catch (error) {

@@ -1,8 +1,11 @@
 // Controlador de movimientos de inventario (entradas y salidas).
 // La validación de los datos se hace aquí; las reglas del stock y las
 // transacciones están en models/movimientoModel.js.
+//
+// Seguridad: el empleado responsable sale de la SESIÓN (la persona que tiene
+// la sesión abierta), nunca de lo que envíe el navegador. Al editar, el
+// movimiento conserva al empleado que lo registró.
 import * as movimientoModel from '../models/movimientoModel.js';
-import * as empleadoModel from '../models/empleadoModel.js';
 import { ErrorHttp } from '../middleware/errores.js';
 import { STOCK_MAXIMO, TIPOS_MOVIMIENTO } from '../config/constantes.js';
 import {
@@ -17,7 +20,6 @@ import {
 function validarDatos(cuerpo) {
   return {
     id_producto: validarId(cuerpo.id_producto, 'Seleccione un producto válido.'),
-    id_empleado: validarId(cuerpo.id_empleado, 'Seleccione un empleado válido.'),
     tipo: valorDeLista(cuerpo.tipo, 'El tipo de movimiento', TIPOS_MOVIMIENTO),
     // Ningún movimiento puede mover más unidades que el máximo permitido.
     cantidad: enteroEnRango(cuerpo.cantidad, 'La cantidad', 1, STOCK_MAXIMO),
@@ -26,10 +28,10 @@ function validarDatos(cuerpo) {
   };
 }
 
-async function validarEmpleado(idEmpleado) {
-  if (!(await empleadoModel.obtenerPorId(idEmpleado))) {
-    throw new ErrorHttp(400, 'El empleado seleccionado no existe.');
-  }
+// Toda cuenta interna está vinculada a un empleado (lo garantiza un CHECK en la base).
+function empleadoDeSesion(req) {
+  if (!req.usuario.id_empleado) throw new ErrorHttp(403, 'Su cuenta no está vinculada a un empleado.');
+  return req.usuario.id_empleado;
 }
 
 // GET /api/movimientos
@@ -56,8 +58,7 @@ export async function obtenerMovimiento(req, res, next) {
 // POST /api/movimientos
 export async function crearMovimiento(req, res, next) {
   try {
-    const datos = validarDatos(obtenerCuerpo(req));
-    await validarEmpleado(datos.id_empleado);
+    const datos = { ...validarDatos(obtenerCuerpo(req)), id_empleado: empleadoDeSesion(req) };
     const idNuevo = await movimientoModel.crear(datos); // valida el producto y el stock
     res.status(201).json(await movimientoModel.obtenerPorId(idNuevo));
   } catch (error) {
@@ -69,9 +70,9 @@ export async function crearMovimiento(req, res, next) {
 export async function actualizarMovimiento(req, res, next) {
   try {
     const id = validarId(req.params.id);
-    if (!(await movimientoModel.obtenerPorId(id))) throw new ErrorHttp(404, 'El movimiento no existe.');
-    const datos = validarDatos(obtenerCuerpo(req));
-    await validarEmpleado(datos.id_empleado);
+    const actual = await movimientoModel.obtenerPorId(id);
+    if (!actual) throw new ErrorHttp(404, 'El movimiento no existe.');
+    const datos = { ...validarDatos(obtenerCuerpo(req)), id_empleado: actual.id_empleado };
     await movimientoModel.actualizar(id, datos);
     res.status(200).json(await movimientoModel.obtenerPorId(id));
   } catch (error) {

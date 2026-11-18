@@ -37,3 +37,19 @@ export function aNumero(texto) {
 export function normalizar(texto) {
   return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
+
+// "2026-11-04 15:40:00" -> "04/11/2026 15:40"
+export function formatearFechaHora(texto) {
+  if (!texto) return '';
+  const [fecha, hora = ''] = texto.split(' ');
+  return `${formatearFecha(fecha)}${hora ? ` ${hora.slice(0, 5)}` : ''}`;
+}
+
+// Fecha de hace N días en formato "AAAA-MM-DD".
+export function fechaHaceDias(dias) {
+  const fecha = new Date();
+  fecha.setDate(fecha.getDate() - dias);
+  return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
+}
+
+export const TEXTO_DISPONIBILIDAD = { disponible: 'Disponible', pocas: 'Pocas unidades', agotado: 'Agotado' };

@@ -7,7 +7,7 @@ import EncabezadoPagina from '../components/EncabezadoPagina.jsx';
 export default function NoEncontradaPage() {
   return (
     <PaginaAnimada>
-      <EncabezadoPagina ruta={['Inventario', 'Página no encontrada']} />
+      <EncabezadoPagina ruta={['Desy', 'Página no encontrada']} />
       <div className="tarjeta estado">
         <MapPinOff size={34} aria-hidden="true" />
         <p>La dirección que escribió no existe en el sistema.</p>

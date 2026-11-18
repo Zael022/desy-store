@@ -2,12 +2,29 @@
 // columnas: [{ clave, titulo, mostrar?(fila) }]
 //   - "clave" es el nombre del campo a mostrar.
 //   - "mostrar" (opcional) permite dar formato, por ejemplo un precio.
+// Acciones de cada fila:
+//   - alEditar / alEliminar: botones de lápiz y basurero (si se pasan).
+//   - acciones(fila): botones propios (por ejemplo "Ver detalle").
+//   - puedeModificar(fila): si devuelve false, esa fila no muestra lápiz ni basurero.
 // Las filas aparecen con una animación escalonada (una detrás de otra).
 import { AnimatePresence, motion } from 'motion/react';
 import { Pencil, Trash2 } from 'lucide-react';
 import Boton from './Boton.jsx';
 
-export default function TablaDatos({ columnas, filas, llave, alEditar, alEliminar, ocupado = false, idEditando, nombreFila }) {
+export default function TablaDatos({
+  columnas,
+  filas,
+  llave,
+  alEditar,
+  alEliminar,
+  acciones,
+  puedeModificar = () => true,
+  ocupado = false,
+  idEditando,
+  nombreFila = (fila) => String(fila[llave])
+}) {
+  const conAcciones = Boolean(alEditar || alEliminar || acciones);
+
   return (
     <div className="tabla-contenedor">
       <table className="tabla">
@@ -18,9 +35,11 @@ export default function TablaDatos({ columnas, filas, llave, alEditar, alElimina
                 {columna.titulo}
               </th>
             ))}
-            <th scope="col" className="columna-acciones">
-              Acciones
-            </th>
+            {conAcciones && (
+              <th scope="col" className="columna-acciones">
+                Acciones
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -39,27 +58,34 @@ export default function TablaDatos({ columnas, filas, llave, alEditar, alElimina
                     {columna.mostrar ? columna.mostrar(fila) : (fila[columna.clave] ?? '—')}
                   </td>
                 ))}
-                <td className="columna-acciones">
-                  <div className="acciones-fila">
-                    <Boton
-                      variante="fantasma"
-                      icono={Pencil}
-                      onClick={() => alEditar(fila)}
-                      disabled={ocupado}
-                      aria-label={`Editar ${nombreFila(fila)}`}
-                      title="Editar"
-                    />
-                    <Boton
-                      variante="fantasma"
-                      className="boton-eliminar"
-                      icono={Trash2}
-                      onClick={() => alEliminar(fila)}
-                      disabled={ocupado}
-                      aria-label={`Eliminar ${nombreFila(fila)}`}
-                      title="Eliminar"
-                    />
-                  </div>
-                </td>
+                {conAcciones && (
+                  <td className="columna-acciones">
+                    <div className="acciones-fila">
+                      {acciones?.(fila)}
+                      {alEditar && puedeModificar(fila) && (
+                        <Boton
+                          variante="fantasma"
+                          icono={Pencil}
+                          onClick={() => alEditar(fila)}
+                          disabled={ocupado}
+                          aria-label={`Editar ${nombreFila(fila)}`}
+                          title="Editar"
+                        />
+                      )}
+                      {alEliminar && puedeModificar(fila) && (
+                        <Boton
+                          variante="fantasma"
+                          className="boton-eliminar"
+                          icono={Trash2}
+                          onClick={() => alEliminar(fila)}
+                          disabled={ocupado}
+                          aria-label={`Eliminar ${nombreFila(fila)}`}
+                          title="Eliminar"
+                        />
+                      )}
+                    </div>
+                  </td>
+                )}
               </motion.tr>
             ))}
           </AnimatePresence>

@@ -1,4 +1,119 @@
-# Checklist final
+# Checklist final (versión 2)
+
+Estados:
+
+- **Implementado y verificado**: se ejecutó de verdad (ver [pruebas.md](pruebas.md)).
+- **Implementado, pendiente de prueba local**: está hecho, falta confirmarlo en el equipo de Daisy.
+- **Pendiente de acción del usuario**: lo tiene que hacer Daisy.
+
+| Requisito | Archivo | Evidencia | Estado |
+|---|---|---|---|
+| Fase 1: análisis inicial y diseño | docs/analisis-inicial.md | Documento con tablas, endpoints, reglas y diseño | Implementado y verificado |
+| Mantener arquitectura, logo y paleta; todo lo anterior sigue funcionando | frontend/src/index.css, tests/04-inventario-original.test.js | 136/136 comprobaciones del inventario original con rol administrador | Implementado y verificado |
+| Stock máximo 67 en un solo lugar | backend/src/config/constantes.js | Pruebas de 409 al pasar 67 (movimientos, devoluciones, abastecimiento) | Implementado y verificado |
+| Migraciones numeradas, `npm run migrar` repetible, registro de aplicadas | backend/database/migraciones/, backend/database/migrar.js | tests/06-migraciones.test.js (v1 migrada = base nueva; segunda vez 0 aplicadas) | Implementado y verificado |
+| script.sql deja la base igual a una migrada | backend/database/script.sql | Comparación de columnas, índices, FK y CHECK en tests/06 | Implementado y verificado |
+| Tablas nuevas con PK, FK, índices y sin cascada | migraciones 001 a 008 | 41 FK RESTRICT (prueba "Ninguna llave foránea usa CASCADE") | Implementado y verificado |
+| db.json y seed con datos coherentes, sin contraseñas publicadas | backend/database/db.json, seed.js | Cuentas del seed con hash NULL; ventas del seed generan movimientos reales | Implementado y verificado |
+| Diagramas y diccionario actualizados | docs/diagrama-*.md, docs/diccionario-de-datos.md | Mermaid 11 parse OK; diccionario generado de la base real | Implementado y verificado |
+| Registro de clientes (siempre rol cliente) | authController.registrar | Prueba "aunque mande rol duena, la cuenta es de cliente" | Implementado y verificado |
+| Verificación de correo obligatoria antes del primer ingreso | authController.verificarCorreo | Login sin verificar → estado verificar_correo; e2e cliente nuevo | Implementado y verificado |
+| Login: sin sesión hasta el MFA; desafío temporal de 5 min en cookie HttpOnly | authController.iniciarSesion, sesionModel.crearDesafio | Prueba "el desafío MFA no sirve para rutas protegidas" | Implementado y verificado |
+| Elegir canal (solo verificados): correo o SMS | authController.enviarCodigoMfa, MfaPage.jsx | Prueba "SMS solo si el teléfono está verificado"; e2e login por SMS | Implementado y verificado |
+| Código con crypto.randomInt, 6 dígitos, 5 min, un uso, 5 intentos, HMAC-SHA256, comparación en tiempo constante | servicios/cripto.js, servicios/codigos.js | 7 pruebas MFA (correcto, incorrecto, vencido, reutilizado, intentos, reenvío, código anterior) + hash | Implementado y verificado |
+| Código nuevo anula el anterior; reenvío ≥ 60 s; máximo por hora | servicios/codigos.js | Pruebas de reenvío y código anterior | Implementado y verificado |
+| MFA en cada login, sin "recordar dispositivo" | authController | No existe esa opción; cada login crea un desafío nuevo | Implementado y verificado |
+| Redirección por rol (cliente, proveedor, ventas, administración, dueña) | DESTINO_POR_ROL, MfaPage.jsx | e2e: /cliente, /proveedor, /pos, /admin, /duena | Implementado y verificado |
+| Errores genéricos en login y recuperación | authController | Pruebas "error genérico" y "misma respuesta exista o no el correo" | Implementado y verificado |
+| Correo real con Nodemailer (SMTP del .env) | servicios/notificaciones.js | Probado con un servidor SMTP real local (tests/05) | Implementado y verificado |
+| Gmail con contraseña de aplicación | README sección 6 | Necesita la cuenta de Daisy | Pendiente de acción del usuario |
+| SMS real con Twilio (+506) | servicios/notificaciones.js | Probado contra un servidor que imita la API de Twilio (tests/05) | Implementado, pendiente de prueba local |
+| Twilio con la cuenta de Daisy | README sección 7 | Necesita su cuenta; la prueba de Twilio puede rechazar textos propios | Pendiente de acción del usuario |
+| Modo consola solo con NODE_ENV=development y MFA_MODO_CONSOLA=true; nunca en producción; no salta el MFA | config/env.js | Prueba "Modo consola: nunca se activa en producción"; e2e escribe cada código | Implementado y verificado |
+| Si el envío falla: error claro, nunca "enviado" | servicios/notificaciones.js | Pruebas SMTP con contraseña mala, sin SMTP y Twilio 21608 (503, no se crea la cuenta) | Implementado y verificado |
+| Credenciales solo en el .env del backend | backend/.env.example, frontend/.env.example | El frontend solo tiene VITE_API_URL; el ZIP no incluye .env | Implementado y verificado |
+| Recuperación de contraseña: enlace de un uso, 15 min; restablecer cierra sesiones | authController.pedirRecuperacion / restablecerContrasena | Prueba de recuperación; e2e cliente del seed | Implementado y verificado |
+| Cambiar contraseña pidiendo la actual; cierra las otras sesiones | perfilController.cambiarContrasena | Prueba "Perfil: cambiar la contraseña..." | Implementado y verificado |
+| Perfil: canales verificados, cambio de correo y teléfono re-verificando, cerrar sesiones | PerfilPage.jsx, perfilController | Prueba de teléfono y correo; e2e verificación por SMS | Implementado y verificado |
+| Cuentas de proveedor y empleado por invitación (enlace de un uso) | usuarioController, InvitacionPage.jsx | Prueba de invitación; e2e 3 invitaciones | Implementado y verificado |
+| Primera dueña con `npm run crear-duena` (no imprime la contraseña; no hace nada si existe) | backend/database/crear-duena.js | Ejecutado: crea, verifica el correo y la segunda vez no hace nada | Implementado y verificado |
+| Sin contraseñas predeterminadas en código, seed ni documentación | todo el proyecto | Revisión con grep antes del ZIP (ver más abajo) | Implementado y verificado |
+| Argon2id (bcrypt 12 si falla en Windows), mínimo 8 caracteres | servicios/contrasenas.js | argon2id probado en Linux | Implementado, pendiente de prueba local |
+| Sesiones en MySQL, token al azar en cookie HttpOnly SameSite=Lax (Secure en producción), solo hash en la base | sesionModel.js, middleware/sesion.js | Prueba de logout (cabecera Set-Cookie con HttpOnly y SameSite=Lax) | Implementado y verificado |
+| Vencimiento por inactividad (30 min) y absoluto (8 h); logout revoca; desactivar cierra sesiones | sesionModel.js, usuarioController.cambiarEstado | Pruebas de inactividad, desactivación y logout | Implementado y verificado |
+| CSRF en POST/PUT/PATCH/DELETE | middleware/csrf.js | Prueba "CSRF: un POST sin token se rechaza" | Implementado y verificado |
+| CORS con credentials solo para el origen del .env (y proxy de Vite) | app.js, vite.config.js | Prueba CORS del inventario original; e2e usa el proxy | Implementado y verificado |
+| Límite de login por cuenta y por IP con bloqueo temporal; límites de códigos y recuperación | middleware/limites.js, authController | Prueba "tras 5 contraseñas incorrectas la cuenta se bloquea" | Implementado y verificado |
+| Autenticación y rol en TODOS los endpoints (incluidos los viejos) | config/permisos.js, middleware/autorizacion.js | Prueba "Sin sesión: TODAS las rutas protegidas responden 401" y 403 por rol | Implementado y verificado |
+| Usuario, rol, proveedor y empleado salen de la sesión | controladores | Pruebas de proveedor con id ajeno en el cuerpo y movimiento con id_empleado inventado | Implementado y verificado |
+| Administración crea, **edita** y desactiva cuentas de ventas y proveedor | usuarioController (invitar, corregir correo, estado), UsuariosPage.jsx | Pruebas de invitación, corrección de correo (y 403/409 en lo que no le toca); e2e | Implementado y verificado |
+| Sin escalada de privilegios | usuarioController | Pruebas de administrador creando admin/dueña y de roles | Implementado y verificado |
+| Respuestas sin hashes, códigos, tokens ni secretos | modelos (columnas públicas) | Prueba MFA revisa que no haya "hash"; auditoría sin códigos | Implementado y verificado |
+| Auditoría de logins, MFA, contraseñas, cuentas, roles, ventas, devoluciones y configuración | servicios/auditoria.js, AuditoriaPage.jsx | Prueba de auditoría; e2e | Implementado y verificado |
+| Helmet | app.js | Cabeceras en todas las respuestas | Implementado y verificado |
+| Rutas privadas por rol en React (solo cosmético) | routes/RutaPrivada.jsx | e2e: "no es para su cuenta" para ventas, admin y cliente | Implementado y verificado |
+| Ventas en una transacción con FOR UPDATE, 409 sin stock, idempotencia y botón deshabilitado | models/ventaModel.js, PuntoVentaPage.jsx | Pruebas de venta normal, sin stock, clave repetida, simultáneas | Implementado y verificado |
+| Precio y costo guardados al vender; ventas no se editan | ventaModel.js, movimientoModel.js | Pruebas de detalle y de movimientos de venta (409) | Implementado y verificado |
+| Devoluciones (≤ vendido − devuelto, motivo, 409 si pasa de 67) | ventaModel.registrarDevolucion | 3 pruebas de devolución | Implementado y verificado |
+| Reutilizar la lógica de movimientos (sin camino paralelo) | movimientoModel.registrarMovimiento | Ventas, devoluciones y abastecimiento la llaman | Implementado y verificado |
+| Solicitudes de abastecimiento (aceptar/rechazar, recibir genera entradas) | abastecimientoModel.js, AbastecimientoPage.jsx, ProveedorPortalPage.jsx | Prueba de abastecimiento; e2e | Implementado y verificado |
+| Costos solo para la dueña; ganancias solo con costos reales y aviso | productoController, reporteController | Pruebas de costos y de ganancia vs SQL; e2e aviso | Implementado y verificado |
+| Interfaz 1 Bienvenida / 2 Login / 3 Registro / 4 MFA / 5 Recuperación | pages/tienda, pages/auth | e2e (capturas 01, 02) | Implementado y verificado |
+| Interfaz 6 Portal cliente (catálogo sin stock exacto, historial propio) | ClientePortalPage, CatalogoPage | e2e (captura 12) | Implementado y verificado |
+| Interfaz 7 Portal proveedor | ProveedorPortalPage | e2e (captura 09) | Implementado y verificado |
+| Interfaz 8 Punto de venta | PuntoVentaPage, VentasPage | e2e (capturas 05, 07, 14) | Implementado y verificado |
+| Interfaz 9 Panel administrativo | PanelAdminPage y páginas de /admin | e2e (captura 08) | Implementado y verificado |
+| Interfaz 10 Dashboard ejecutivo con Recharts y filtro de fechas | DashboardDuenaPage, GraficosDashboard | e2e (captura 03) | Implementado y verificado |
+| Interfaz 11 Perfil y seguridad | PerfilPage | e2e (captura 11) | Implementado y verificado |
+| Responsive, formularios con etiqueta, estados de carga/vacío/error, modales (sin window.confirm), Motion con movimiento reducido, sesión vencida → login | componentes | e2e en 390 px; grep sin window.confirm; MotionConfig reducedMotion="user" | Implementado y verificado |
+| Pruebas automáticas con node:test + supertest (`npm test`) | backend/tests/ | 60/60 OK | Implementado y verificado |
+| Prueba en navegador del flujo de cada rol | docs/evidencias/e2e_roles.py | 42/42 OK |
+| Pantallas originales (CRUD, ficha, filtros, estados) siguen funcionando en el navegador | docs/evidencias/e2e_inventario.py | 155/155 OK con sesión de administrador | Implementado y verificado |
+| Lint backend y frontend | eslint.config.js | 0 errores | Implementado y verificado |
+| .env.example con todas las variables; scripts migrar, seed, crear-duena, test, dev, start | backend/.env.example, backend/package.json | Revisado | Implementado y verificado |
+| README en el orden pedido, endpoints, matriz, dependencias y analogías | README.md, docs/endpoints.md, docs/matriz-de-permisos.md | Revisado | Implementado y verificado |
+| ZIP sin node_modules, .env, credenciales ni .git, verificado desde cero | mini-proyecto-1.zip | Descomprimido en carpeta vacía: npm ci, migrar, seed, crear-duena, npm test 81/81, lint y build | Implementado y verificado |
+| Productos reales de Desy (12, con sus 29 fotos) | backend/database/productos-desy.json, cargar-productos.js, database/fotos/ | tests/07 (seed los carga, no duplica, stock por movimientos); actualización de una base v2 existente | Implementado y verificado |
+| Subcategorías (Crochet > Peluches, Llaveros de crochet, Decoración) | migración 006, categoriaController, CategoriasPage, FiltrosProductos, utils/categorias.js | tests/07 (dos niveles, sin ciclos, 409 al borrar); e2e_fotos (filtro Crochet = 8 productos) | Implementado y verificado |
+| Fotos en catálogo, ficha (galería), portada y buscador | TarjetaProducto, GaleriaProducto, FotoProducto, BienvenidaPage, BuscadorCabecera | e2e_fotos 20/20, capturas 16 a 20 | Implementado y verificado |
+| Subir, elegir principal y borrar fotos (administración y dueña) | fotoController, servicios/fotos.js (sharp + multer), ModalFotos | tests/07 (WebP sin GPS, 400/413/409, permisos 401/403, CSRF); e2e_fotos | Implementado y verificado |
+| Fotos con medidas nunca son la principal | migración 007, models/fotoModel.js (ordenar), fotoController (409), ModalFotos (regla), productos-desy.json (`fotos_medidas`) | tests/07 y e2e_fotos 27/27; actualización de una base con las fotos ya cargadas | Implementado y verificado |
+| Pedidos de clientes con productos apartados | migración 008, models/pedidoModel.js, models/apartados.js, pedidoController.js, servicios/avisosPedidos.js, MiPedidoPage, MisPedidos, PedidosPage | tests/08 (10 pruebas) y e2e_pedidos 18/18; actualización de una base del 9 de noviembre | Implementado y verificado |
+| Lo apartado no se vende ni se saca a mano | movimientoModel.guardarStock, ventaModel.registrarVenta | tests/08 ("Lo apartado no se puede pedir, vender ni sacar a mano") | Implementado y verificado |
+| Vencimiento automático y avisos por correo | pedidoModel.vencerAtrasados, server.js (cada 5 min), avisosPedidos.js | tests/08 (vencer, avisos en el buzón de prueba) | Implementado y verificado; el envío real por Gmail queda pendiente en el equipo de Daisy |
+| Precios reales de los productos nuevos | backend/database/productos-desy.json | Hoy son precios de ejemplo | Pendiente de acción del usuario |
+| Probar todo en Windows + VS Code + MySQL 8.4 | README | Entorno de prueba: Linux + MySQL 8.0.46 | Implementado, pendiente de prueba local |
+| Subir los cambios a GitHub | README sección 15 | Lo hace Daisy | Pendiente de acción del usuario |
+
+## Decisiones tomadas (explicadas simple)
+
+- **Un solo lugar para los permisos** (`backend/src/config/permisos.js`): cada ruta dice qué roles la usan; un middleware la revisa en cada petición y lo que no está en la lista responde 404. La matriz de la documentación se genera desde ese archivo (`npm run matriz`), así nunca quedan distintas.
+- **Roles guardados sin ñ** (`duena`) para evitar problemas de codificación; en pantalla dice "Dueña".
+- **Toda cuenta interna se vincula a un empleado** (también la dueña), así cada movimiento y venta queda a nombre de una persona real. `crear-duena` puede vincularla a un empleado existente.
+- **El empleado de un movimiento sale de la sesión** (antes se elegía en una lista). Es un cambio de la v1 pedido por la regla "nunca desde lo que envía el frontend"; al editar, el movimiento conserva a quien lo registró.
+- **Movimientos creados por ventas, devoluciones o abastecimiento no se editan ni borran** (409): así el inventario y las ventas nunca se contradicen.
+- **Los vencimientos se comparan en MySQL con NOW()** (no con el reloj de Node) para que no haya diferencias de zona horaria.
+- **Modo consola aplica a correos y SMS** (incluye recuperación e invitaciones) para poder probar todo sin servicios externos.
+- **Registro con correo existente**: responde igual que uno nuevo y avisa por correo al dueño de esa cuenta.
+- **Recuperación con el correo sin configurar**: responde 503 para cualquier correo (se revisa antes de buscar la cuenta, así no delata nada).
+- **El SMS usa la API REST de Twilio con fetch** (sin el paquete oficial), una dependencia menos; `TWILIO_API_URL` permite probarlo con un servidor falso.
+- **El proxy de Vite** (`/api` → puerto 3000) hace que navegador, cookies y CSRF funcionen sin trucos de CORS en desarrollo.
+- **bcryptjs** (no `bcrypt`) como plan B porque no necesita compilar nada en Windows.
+- **Pruebas en una base aparte** que se borra y se crea en cada archivo; nunca tocan la base de la tienda.
+- **Fotos en una carpeta, no dentro de MySQL**: la base guarda solo el nombre del archivo (como la ficha que dice en qué cajón está algo). La carpeta `backend/uploads` no se sube a GitHub; las fotos iniciales sí (en `backend/database/fotos`) y el seed las copia.
+- **Cada foto se vuelve a dibujar como WebP** con `sharp`: así pesa poco (unos 25 KB), se ve igual en todos los navegadores y pierde los datos ocultos del celular (GPS). El nombre lo inventa el servidor.
+- **Solo dos niveles de categorías** (principal y subcategoría): alcanza para Crochet > Peluches y mantiene simples los filtros. Elegir "Crochet" en los filtros incluye sus subcategorías.
+- **Productos nuevos por nombre, no por ID**: `productos-desy.json` busca categorías, materiales y proveedores por nombre, así funciona igual en una base nueva y en la que Daisy ya tiene. Si un código ya existe, no se toca (respeta los cambios hechos en la aplicación). El stock inicial entra como un movimiento real.
+- **Al crear un producto se abre la ventana de fotos**, para no olvidar agregarlas.
+- **Apartar sin tocar el stock:** las unidades de un pedido se restan de lo *disponible*, no de `productos.stock`. Así el stock sigue cambiando solo con movimientos (regla de la versión 1) y un pedido vencido o rechazado se "libera" solo, sin movimientos de ida y vuelta. La salida real ocurre al entregar, con la venta.
+- **El vencimiento se calcula en la consulta** (`vence_en > NOW()`), no depende de que corra la revisión: si el servidor estuvo apagado, lo vencido igual deja de apartar. La revisión cada 5 minutos solo cambia el estado y envía el aviso.
+- **Se cobra el precio del pedido**, para respetar lo que vio el cliente al pedir.
+- **Fotos con medidas como una marca de la foto** (no como un orden manual): así la regla "nunca de primera" la cumple el backend siempre, aunque se suban, borren o reordenen fotos después. Las tarjetas usan solo fotos normales; si no hay ninguna, se ve el ícono.
+- **El antiguo `npm run probar-api`** se reemplazó por `npm test` (sus 135 comprobaciones están dentro, ahora con sesión y CSRF).
+
+---
+
+## Anexo · Checklist de la versión 1
 
 Estados posibles:
 
@@ -6,7 +121,7 @@ Estados posibles:
 - **Implementado, pendiente de prueba local**: está hecho, pero falta confirmarlo en el equipo de Daisy (Windows).
 - **Pendiente de acción del usuario**: lo tiene que hacer Daisy.
 
-## Decisiones tomadas (y contradicciones entre el PDF y el prompt)
+### Decisiones tomadas (y contradicciones entre el PDF y el prompt)
 
 | Tema | PDF | Prompt | Decisión |
 |---|---|---|---|
@@ -41,7 +156,7 @@ Decisiones de rutina (la opción más sencilla):
 - Letra: Century Gothic si el equipo la tiene; si no, Urbanist, incluida por npm (`@fontsource-variable/urbanist`), sin descargar nada de internet al usar la app.
 - Puerto del frontend fijo (5173, `strictPort`) para que siempre coincida con `CORS_ORIGIN`.
 
-## Requisitos del PDF (Día 1)
+### Requisitos del PDF (Día 1)
 
 | Requisito | Archivo o funcionalidad | Evidencia | Estado |
 |---|---|---|---|
@@ -59,7 +174,7 @@ Decisiones de rutina (la opción más sencilla):
 | Endpoints probados con Postman, Thunder Client o similar | `npm run probar-api` | 135 pruebas correctas | Implementado y verificado |
 | Repositorio con la estructura creada | README sección 14 | — | Pendiente de acción del usuario (crear el repo y hacer `git push`) |
 
-## Requisitos del prompt
+### Requisitos del prompt
 
 ### Forma de trabajo y calidad
 

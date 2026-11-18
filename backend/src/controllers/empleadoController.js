@@ -77,6 +77,13 @@ export async function eliminarEmpleado(req, res, next) {
     if (totalMovimientos > 0) {
       throw new ErrorHttp(409, `No se puede eliminar a "${empleado.nombre}" porque registró ${totalMovimientos} movimiento(s) de inventario.`);
     }
+    const vinculos = await empleadoModel.contarVinculos(id);
+    if (vinculos.cuentas > 0) {
+      throw new ErrorHttp(409, `No se puede eliminar a "${empleado.nombre}" porque tiene una cuenta de usuario. Desactive la cuenta en Usuarios.`);
+    }
+    if (vinculos.ventas > 0) {
+      throw new ErrorHttp(409, `No se puede eliminar a "${empleado.nombre}" porque tiene ventas o devoluciones registradas.`);
+    }
     await empleadoModel.eliminar(id);
     res.status(200).json({ message: 'Empleado eliminado correctamente.', id });
   } catch (error) {

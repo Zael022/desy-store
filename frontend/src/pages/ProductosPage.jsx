@@ -3,8 +3,12 @@
 //   - Arriba, "Ordenar por" y el botón "Nuevo producto".
 //   - Los productos se muestran como tarjetas (lista para consultar).
 //   - El formulario para crear y editar se abre en un modal.
+//   - El botón de fotos (o crear un producto) abre la ventana de fotos del producto.
+//   - Las categorías pueden tener subcategorías: al filtrar por "Crochet" entran también
+//     "Peluches", "Llaveros de crochet" y "Decoración".
 // Los filtros, la búsqueda y el orden se aplican en el navegador sobre la lista que da la API.
 // Igual que antes: NO hay campo de stock; el stock solo cambia en Movimientos.
+// El costo unitario solo aparece para la dueña (el backend lo oculta a los demás).
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { AnimatePresence } from 'motion/react';
@@ -20,6 +24,8 @@ import ModalConfirmacion from '../components/ModalConfirmacion.jsx';
 import FiltrosProductos from '../components/FiltrosProductos.jsx';
 import SelectorOrden from '../components/SelectorOrden.jsx';
 import TarjetaProducto from '../components/TarjetaProducto.jsx';
+import ModalFotos from '../components/ModalFotos.jsx';
+import { fotoPrincipalDe } from '../utils/fotos.js';
 import { Cargando, ErrorCarga, SinRegistros } from '../components/EstadoLista.jsx';
 import { listarProductos, crearProducto, actualizarProducto, eliminarProducto } from '../services/productosService.js';
 import { listarCategorias } from '../services/categoriasService.js';
@@ -28,8 +34,10 @@ import { listarMateriales } from '../services/materialesService.js';
 import { obtenerConfiguracion } from '../services/configuracionService.js';
 import { aNumero, normalizar } from '../utils/formato.js';
 import { FILTROS_VACIOS } from '../utils/filtrosProductos.js';
+import { etiquetaCategoria, idsIncluidos, ordenarJerarquia } from '../utils/categorias.js';
+import { useAutenticacion } from '../hooks/useAutenticacion.js';
 
-const FORMULARIO_VACIO = { codigo: '', nombre: '', descripcion: '', precio: '', id_categoria: '', id_proveedor: '', id_material: '' };
+const FORMULARIO_VACIO = { codigo: '', nombre: '', descripcion: '', precio: '', costo_unitario: '', id_categoria: '', id_proveedor: '', id_material: '' };
 
 const OPCIONES_ORDEN = [
   { valor: 'nombre', texto: 'Nombre (A-Z)' },
@@ -51,6 +59,8 @@ const COMPARADORES = {
 };
 
 export default function ProductosPage() {
+  const { usuario } = useAutenticacion();
+  const esDuena = usuario?.rol === 'duena';
   // ----- Datos que vienen de la API -----
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -78,6 +88,9 @@ export default function ProductosPage() {
   const [guardando, setGuardando] = useState(false);
   const [errorFormulario, setErrorFormulario] = useState('');
   const refPrimerCampo = useRef(null);
+
+  // ----- Fotos (producto cuya ventana de fotos está abierta) -----
+  const [conFotos, setConFotos] = useState(null);
 
   // ----- Eliminación -----
   const [porEliminar, setPorEliminar] = useState(null);
@@ -125,11 +138,12 @@ export default function ProductosPage() {
   const textoBuscado = normalizar(busqueda.trim());
   const precioMin = filtros.precioMin === '' ? null : Number(filtros.precioMin);
   const precioMax = filtros.precioMax === '' ? null : Number(filtros.precioMax);
+  const categoriasElegidas = idsIncluidos(filtros.categorias, categorias);
   const productosVisibles = productos
-    .filter((p) => !textoBuscado || normalizar(`${p.nombre} ${p.codigo} ${p.nombre_categoria} ${p.nombre_material}`).includes(textoBuscado))
+    .filter((p) => !textoBuscado || normalizar(`${p.nombre} ${p.codigo} ${p.nombre_categoria} ${p.nombre_categoria_padre ?? ''} ${p.nombre_material}`).includes(textoBuscado))
     .filter((p) => precioMin === null || p.precio >= precioMin)
     .filter((p) => precioMax === null || p.precio <= precioMax)
-    .filter((p) => filtros.categorias.length === 0 || filtros.categorias.includes(p.id_categoria))
+    .filter((p) => filtros.categorias.length === 0 || categoriasElegidas.has(p.id_categoria))
     .filter((p) => filtros.materiales.length === 0 || filtros.materiales.includes(p.id_material))
     .filter((p) => filtros.proveedores.length === 0 || filtros.proveedores.includes(p.id_proveedor))
     .filter((p) => {
@@ -160,6 +174,7 @@ export default function ProductosPage() {
       nombre: producto.nombre,
       descripcion: producto.descripcion ?? '',
       precio: String(producto.precio),
+      costo_unitario: producto.costo_unitario === null || producto.costo_unitario === undefined ? '' : String(producto.costo_unitario),
       id_categoria: String(producto.id_categoria),
       id_proveedor: String(producto.id_proveedor),
       id_material: String(producto.id_material)
@@ -187,15 +202,18 @@ export default function ProductosPage() {
       precio: aNumero(formulario.precio),
       id_categoria: aNumero(formulario.id_categoria),
       id_proveedor: aNumero(formulario.id_proveedor),
-      id_material: aNumero(formulario.id_material)
+      id_material: aNumero(formulario.id_material),
+      // Solo la dueña envía el costo (vacío = todavía no se conoce).
+      ...(esDuena ? { costo_unitario: aNumero(formulario.costo_unitario) } : {})
     };
     try {
       if (idEditando) {
         await actualizarProducto(idEditando, datos);
         toast.success('Producto actualizado correctamente.');
       } else {
-        await crearProducto(datos);
-        toast.success('Producto creado con stock 0. Registre una entrada en Movimientos.');
+        const nuevo = await crearProducto(datos);
+        toast.success('Producto creado con stock 0. Agregue sus fotos y registre una entrada en Movimientos.');
+        setConFotos(nuevo); // abre la ventana de fotos del producto nuevo
       }
       cerrarFormulario(); // solo se cierra y se limpia si se guardó bien
       recargarLista();
@@ -229,7 +247,7 @@ export default function ProductosPage() {
     <PaginaAnimada>
       {busqueda ? (
         <div className="encabezado-busqueda">
-          <MigasDePan pasos={[{ texto: 'Inicio', ruta: '/' }, { texto: `Resultados de búsqueda para: '${busqueda}'` }]} />
+          <MigasDePan pasos={[{ texto: 'Panel', ruta: '/admin' }, { texto: `Resultados de búsqueda para: '${busqueda}'` }]} />
           {!cargando && !errorCarga && <p className="resultados-encontrados">{productosVisibles.length} producto(s) encontrado(s)</p>}
         </div>
       ) : (
@@ -302,6 +320,7 @@ export default function ProductosPage() {
                       ocupado={ocupado}
                       alEditar={empezarEdicion}
                       alEliminar={setPorEliminar}
+                      alFotos={setConFotos}
                     />
                   ))}
                 </AnimatePresence>
@@ -319,7 +338,7 @@ export default function ProductosPage() {
             <Info size={18} aria-hidden="true" />
             <span>
               El stock no se escribe aquí: un producto nuevo empieza en 0 y cambia con las entradas y salidas en{' '}
-              <Link to="/movimientos">Movimientos</Link>
+              <Link to="/admin/movimientos">Movimientos</Link>
               {stockMaximo !== null && ` (máximo ${stockMaximo} unidades)`}.
             </span>
           </p>
@@ -332,8 +351,20 @@ export default function ProductosPage() {
             <CampoFormulario ref={refPrimerCampo} id="codigo" etiqueta="Código" valor={formulario.codigo} alCambiar={cambiarCampo} obligatorio maxLength={20} placeholder="ARE-003" />
             <CampoFormulario id="precio" etiqueta="Precio (₡)" tipo="number" min="0" step="0.01" valor={formulario.precio} alCambiar={cambiarCampo} obligatorio />
           </div>
+          {esDuena && (
+            <CampoFormulario
+              id="costo_unitario"
+              etiqueta="Costo unitario (₡)"
+              tipo="number"
+              min="0"
+              step="0.01"
+              valor={formulario.costo_unitario}
+              alCambiar={cambiarCampo}
+              ayuda="Solo usted (dueña) ve este dato. Déjelo vacío si todavía no conoce el costo: las ganancias se calculan solo con costos reales."
+            />
+          )}
           <CampoFormulario id="nombre" etiqueta="Nombre" valor={formulario.nombre} alCambiar={cambiarCampo} obligatorio maxLength={100} />
-          <CampoFormulario id="id_categoria" etiqueta="Categoría" tipo="select" valor={formulario.id_categoria} alCambiar={cambiarCampo} opciones={aOpciones(categorias, 'id_categoria')} textoOpcionVacia="Seleccione una categoría" obligatorio />
+          <CampoFormulario id="id_categoria" etiqueta="Categoría" tipo="select" valor={formulario.id_categoria} alCambiar={cambiarCampo} opciones={ordenarJerarquia(categorias).map((c) => ({ valor: String(c.id_categoria), texto: etiquetaCategoria(c, categorias) }))} textoOpcionVacia="Seleccione una categoría" obligatorio />
           <CampoFormulario id="id_material" etiqueta="Material" tipo="select" valor={formulario.id_material} alCambiar={cambiarCampo} opciones={aOpciones(materiales, 'id_material')} textoOpcionVacia="Seleccione un material" obligatorio />
           <CampoFormulario id="id_proveedor" etiqueta="Proveedor" tipo="select" valor={formulario.id_proveedor} alCambiar={cambiarCampo} opciones={aOpciones(proveedores, 'id_proveedor')} textoOpcionVacia="Seleccione un proveedor" obligatorio />
           <CampoFormulario id="descripcion" etiqueta="Descripción" tipo="textarea" valor={formulario.descripcion} alCambiar={cambiarCampo} maxLength={255} />
@@ -347,6 +378,16 @@ export default function ProductosPage() {
           </div>
         </form>
       </Modal>
+
+      <ModalFotos
+        producto={conFotos}
+        alCerrar={() => setConFotos(null)}
+        alCambiar={(fotos) => {
+          // Actualiza la tarjeta sin volver a pedir toda la lista.
+          const id = conFotos.id_producto;
+          setProductos((lista) => lista.map((p) => (p.id_producto === id ? { ...p, foto_principal: fotoPrincipalDe(fotos), total_fotos: fotos.length } : p)));
+        }}
+      />
 
       <ModalConfirmacion
         abierto={porEliminar !== null}

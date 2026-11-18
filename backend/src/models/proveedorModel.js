@@ -50,3 +50,13 @@ export async function contarProductos(id) {
   const [filas] = await pool.execute('SELECT COUNT(*) AS total FROM productos WHERE id_proveedor = ?', [id]);
   return filas[0].total;
 }
+
+// ¿Tiene una cuenta de usuario o solicitudes de abastecimiento? (entonces no se puede borrar)
+export async function contarVinculos(id) {
+  const [filas] = await pool.execute(
+    `SELECT (SELECT COUNT(*) FROM usuarios WHERE id_proveedor = ?) AS cuentas,
+            (SELECT COUNT(*) FROM solicitudes_abastecimiento WHERE id_proveedor = ?) AS solicitudes`,
+    [id, id]
+  );
+  return filas[0];
+}

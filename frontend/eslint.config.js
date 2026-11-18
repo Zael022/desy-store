@@ -27,6 +27,9 @@ export default [
       // Hace que ESLint entienda que un componente usado en JSX (<Boton />) sí está usado,
       // y así detecta de verdad los imports que sobran.
       'react/jsx-uses-vars': 'error',
+      // Avisa si se usa en JSX un componente que no existe o no se importó.
+      'react/jsx-no-undef': 'error',
+      'react/jsx-key': 'error',
       'no-unused-vars': ['error', { argsIgnorePattern: '^_' }]
     }
   }

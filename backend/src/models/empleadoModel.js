@@ -50,3 +50,13 @@ export async function contarMovimientos(id) {
   const [filas] = await pool.execute('SELECT COUNT(*) AS total FROM movimientos WHERE id_empleado = ?', [id]);
   return filas[0].total;
 }
+
+// ¿Tiene una cuenta de usuario o ventas registradas? (entonces no se puede borrar)
+export async function contarVinculos(id) {
+  const [filas] = await pool.execute(
+    `SELECT (SELECT COUNT(*) FROM usuarios WHERE id_empleado = ?) AS cuentas,
+            (SELECT COUNT(*) FROM ventas WHERE id_empleado = ?) + (SELECT COUNT(*) FROM devoluciones WHERE id_empleado = ?) AS ventas`,
+    [id, id, id]
+  );
+  return filas[0];
+}

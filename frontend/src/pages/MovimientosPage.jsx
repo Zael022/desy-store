@@ -2,6 +2,9 @@
 // Aquí es el ÚNICO lugar donde cambia el stock de un producto.
 // La página muestra el stock actual, el máximo permitido y cómo quedaría el
 // stock al guardar. La decisión final la toma el backend (409 si no se puede).
+// El empleado que registra es la persona con la sesión abierta (lo decide el backend).
+// Los movimientos que vienen de una venta, una devolución o un abastecimiento
+// no se editan ni se borran aquí: se corrigen con una devolución.
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { ArrowDownToLine, ArrowUpFromLine, Plus, Save, TriangleAlert, X } from 'lucide-react';
@@ -15,7 +18,7 @@ import IndicadorStock from '../components/IndicadorStock.jsx';
 import { Cargando, ErrorCarga, SinRegistros } from '../components/EstadoLista.jsx';
 import { listarMovimientos, crearMovimiento, actualizarMovimiento, eliminarMovimiento } from '../services/movimientosService.js';
 import { listarProductos } from '../services/productosService.js';
-import { listarEmpleados } from '../services/empleadosService.js';
+import { useAutenticacion } from '../hooks/useAutenticacion.js';
 import { obtenerConfiguracion } from '../services/configuracionService.js';
 import { aNumero, fechaDeHoy, formatearFecha } from '../utils/formato.js';
 
@@ -25,12 +28,20 @@ const OPCIONES_TIPO = [
 ];
 
 function formularioVacio() {
-  return { id_producto: '', id_empleado: '', tipo: 'entrada', cantidad: '', fecha: fechaDeHoy(), motivo: '' };
+  return { id_producto: '', tipo: 'entrada', cantidad: '', fecha: fechaDeHoy(), motivo: '' };
 }
 
 // Una entrada suma y una salida resta (la misma regla que usa el backend).
 function efecto(tipo, cantidad) {
   return tipo === 'entrada' ? cantidad : -cantidad;
+}
+
+// ¿De dónde salió el movimiento? (venta, devolución, abastecimiento o a mano)
+function origenDe(m) {
+  if (m.id_venta) return `Venta #${m.id_venta}`;
+  if (m.id_devolucion) return `Devolución #${m.id_devolucion}`;
+  if (m.id_solicitud) return `Abastecimiento #${m.id_solicitud}`;
+  return 'Manual';
 }
 
 function EtiquetaTipo({ tipo }) {
@@ -47,7 +58,7 @@ function EtiquetaTipo({ tipo }) {
 export default function MovimientosPage() {
   const [movimientos, setMovimientos] = useState([]);
   const [productos, setProductos] = useState([]);
-  const [empleados, setEmpleados] = useState([]);
+  const { usuario } = useAutenticacion();
   const [stockMaximo, setStockMaximo] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState(null);
@@ -67,12 +78,11 @@ export default function MovimientosPage() {
   // Se piden también los productos para mostrar su stock actualizado después de cada cambio.
   useEffect(() => {
     let activo = true;
-    Promise.all([listarMovimientos(), listarProductos(), listarEmpleados(), obtenerConfiguracion()])
-      .then(([listaMovimientos, listaProductos, listaEmpleados, configuracion]) => {
+    Promise.all([listarMovimientos(), listarProductos(), obtenerConfiguracion()])
+      .then(([listaMovimientos, listaProductos, configuracion]) => {
         if (!activo) return;
         setMovimientos(listaMovimientos);
         setProductos(listaProductos);
-        setEmpleados(listaEmpleados);
         setStockMaximo(configuracion.stock_maximo);
         setErrorCarga(null);
       })
@@ -98,7 +108,6 @@ export default function MovimientosPage() {
     setIdEditando(movimiento.id_movimiento);
     setFormulario({
       id_producto: String(movimiento.id_producto),
-      id_empleado: String(movimiento.id_empleado),
       tipo: movimiento.tipo,
       cantidad: String(movimiento.cantidad),
       fecha: movimiento.fecha,
@@ -120,7 +129,6 @@ export default function MovimientosPage() {
     setErrorFormulario('');
     const datos = {
       id_producto: aNumero(formulario.id_producto),
-      id_empleado: aNumero(formulario.id_empleado),
       tipo: formulario.tipo,
       cantidad: aNumero(formulario.cantidad),
       fecha: formulario.fecha,
@@ -179,7 +187,6 @@ export default function MovimientosPage() {
     valor: String(p.id_producto),
     texto: `${p.codigo} · ${p.nombre} (stock ${p.stock}${stockMaximo !== null ? ` de ${stockMaximo}` : ''})`
   }));
-  const opcionesEmpleados = empleados.map((e) => ({ valor: String(e.id_empleado), texto: `${e.nombre} (${e.puesto})` }));
 
   const columnas = [
     { clave: 'fecha', titulo: 'Fecha', mostrar: (m) => formatearFecha(m.fecha) },
@@ -188,6 +195,7 @@ export default function MovimientosPage() {
     { clave: 'cantidad', titulo: 'Cantidad', mostrar: (m) => <strong className={m.tipo === 'entrada' ? 'texto-entrada' : 'texto-salida'}>{m.tipo === 'entrada' ? `+${m.cantidad}` : `−${m.cantidad}`}</strong> },
     { clave: 'nombre_empleado', titulo: 'Registró' },
     { clave: 'motivo', titulo: 'Motivo' },
+    { clave: 'origen', titulo: 'Origen', mostrar: (m) => <span className={origenDe(m) === 'Manual' ? 'texto-secundario' : 'etiqueta etiqueta-origen'}>{origenDe(m)}</span> },
     { clave: 'stock_actual', titulo: 'Stock actual', mostrar: (m) => <IndicadorStock stock={m.stock_actual} maximo={stockMaximo} /> }
   ];
 
@@ -237,7 +245,10 @@ export default function MovimientosPage() {
           </div>
           <div className="fila-campos">
             <CampoFormulario id="fecha" etiqueta="Fecha" tipo="date" valor={formulario.fecha} alCambiar={cambiarCampo} obligatorio />
-            <CampoFormulario id="id_empleado" etiqueta="Registrado por" tipo="select" valor={formulario.id_empleado} alCambiar={cambiarCampo} opciones={opcionesEmpleados} textoOpcionVacia="Seleccione un empleado" obligatorio />
+            <div className="campo">
+              <span className="campo-etiqueta-fija">Registrado por</span>
+              <p className="campo-valor-fijo">{idEditando ? movimientoOriginal?.nombre_empleado : usuario?.nombre}</p>
+            </div>
           </div>
           <CampoFormulario id="motivo" etiqueta="Motivo" valor={formulario.motivo} alCambiar={cambiarCampo} maxLength={255} placeholder="Ejemplo: Venta en tienda" />
           <div className="formulario-acciones">
@@ -270,6 +281,7 @@ export default function MovimientosPage() {
               nombreFila={(m) => `${m.tipo} de ${m.cantidad} de ${m.nombre_producto}`}
               alEditar={empezarEdicion}
               alEliminar={setPorEliminar}
+              puedeModificar={(m) => origenDe(m) === 'Manual'}
             />
           )}
         </section>

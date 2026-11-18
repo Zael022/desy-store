@@ -1,0 +1,245 @@
+{
+  "_instrucciones": "Productos reales de Desy. Los cargan 'npm run seed' y 'npm run cargar-productos'. Las categorías, materiales y proveedores se buscan por NOMBRE. Un producto que ya existe (mismo código) no se toca: después de cargarlo, cambie precio, descripción o fotos desde Productos. stock_inicial se registra como una ENTRADA en Movimientos solo la primera vez. Las fotos están en database/fotos: en \"fotos\" van las normales (la primera es la principal) y en \"fotos_medidas\" las que muestran medidas, que nunca son la principal.",
+  "categorias": [
+    {
+      "nombre": "Collares",
+      "descripcion": "Cadenas, gargantillas y collares con dije"
+    },
+    {
+      "nombre": "Crochet",
+      "descripcion": "Amigurumis y piezas tejidas a mano"
+    },
+    {
+      "nombre": "Peluches",
+      "descripcion": "Muñecos tejidos a crochet para regalar o coleccionar",
+      "padre": "Crochet"
+    },
+    {
+      "nombre": "Llaveros de crochet",
+      "descripcion": "Mini amigurumis con argolla para llaves o bolsos",
+      "padre": "Crochet"
+    },
+    {
+      "nombre": "Decoración",
+      "descripcion": "Flores y piezas tejidas para decorar",
+      "padre": "Crochet"
+    },
+    {
+      "nombre": "Llaveros",
+      "descripcion": "Llaveros de acrílico, para compartir y mini llaveros"
+    }
+  ],
+  "materiales": [
+    {
+      "nombre": "Hilo de felpa (chenilla)",
+      "es_hipoalergenico": true,
+      "descripcion": "Suave y esponjoso, ideal para peluches. Lavar a mano con agua fría"
+    },
+    {
+      "nombre": "Hilo acrílico",
+      "es_hipoalergenico": true,
+      "descripcion": "Resistente y de colores firmes. Lavar a mano"
+    },
+    {
+      "nombre": "Acrílico impreso",
+      "es_hipoalergenico": true,
+      "descripcion": "Lámina de acrílico con imagen impresa. Limpiar con paño seco"
+    },
+    {
+      "nombre": "Cuarzo y cordón encerado",
+      "es_hipoalergenico": false,
+      "descripcion": "Dije de piedra de cuarzo en cordón encerado con broche metálico"
+    }
+  ],
+  "productos": [
+    {
+      "codigo": "COL-101",
+      "nombre": "Collares de cuarzo con corazón (pareja)",
+      "descripcion": "Set de dos collares para compartir: punta de cuarzo y corazón de piedra en cordón negro encerado. Colores según disponibilidad.",
+      "precio": 6500,
+      "categoria": "Collares",
+      "material": "Cuarzo y cordón encerado",
+      "proveedor": "Brillos del Pacífico S.A.",
+      "stock_inicial": 5,
+      "fotos": [
+        "col-101-1.webp",
+        "col-101-2.webp"
+      ]
+    },
+    {
+      "codigo": "CRO-PEL-001",
+      "nombre": "Peluche conejo orejón",
+      "descripcion": "Conejo de felpa color crema, tejido a mano. Mide 12 cm de alto y 13 cm de ancho con las orejas.",
+      "precio": 9500,
+      "categoria": "Peluches",
+      "material": "Hilo de felpa (chenilla)",
+      "proveedor": "Taller Artesanal Manos de Mar",
+      "stock_inicial": 3,
+      "fotos": [
+        "cro-pel-001-1.webp"
+      ],
+      "fotos_medidas": [
+        "cro-pel-001-2.webp"
+      ]
+    },
+    {
+      "codigo": "CRO-PEL-002",
+      "nombre": "Peluche tortuga",
+      "descripcion": "Tortuga de felpa tejida a mano. Tamaño mini (5 cm) o grande (16 x 14 cm). Caparazón en varios colores.",
+      "precio": 6500,
+      "categoria": "Peluches",
+      "material": "Hilo de felpa (chenilla)",
+      "proveedor": "Taller Artesanal Manos de Mar",
+      "stock_inicial": 4,
+      "fotos": [
+        "cro-pel-002-1.webp"
+      ],
+      "fotos_medidas": [
+        "cro-pel-002-2.webp",
+        "cro-pel-002-3.webp"
+      ]
+    },
+    {
+      "codigo": "CRO-PEL-003",
+      "nombre": "Peluche Batman",
+      "descripcion": "Amigurumi de superhéroe tejido a mano con detalles bordados. Mide 20 cm de alto y 10,5 cm de ancho.",
+      "precio": 15000,
+      "categoria": "Peluches",
+      "material": "Hilo acrílico",
+      "proveedor": "Taller Artesanal Manos de Mar",
+      "stock_inicial": 2,
+      "fotos": [
+        "cro-pel-003-2.webp"
+      ],
+      "fotos_medidas": [
+        "cro-pel-003-1.webp"
+      ]
+    },
+    {
+      "codigo": "CRO-PEL-004",
+      "nombre": "Peluche Snoopy",
+      "descripcion": "Perrito de felpa blanco con orejas negras, tejido a mano. Mide 8 cm de alto y 5 cm de ancho.",
+      "precio": 8500,
+      "categoria": "Peluches",
+      "material": "Hilo de felpa (chenilla)",
+      "proveedor": "Taller Artesanal Manos de Mar",
+      "stock_inicial": 3,
+      "fotos": [
+        "cro-pel-004-1.webp",
+        "cro-pel-004-2.webp"
+      ],
+      "fotos_medidas": [
+        "cro-pel-004-3.webp"
+      ]
+    },
+    {
+      "codigo": "CRO-LLA-001",
+      "nombre": "Llavero kiwi",
+      "descripcion": "Pajarito kiwi de felpa tejido a mano. Mide 5 cm de alto y 4 cm de ancho.",
+      "precio": 3500,
+      "categoria": "Llaveros de crochet",
+      "material": "Hilo de felpa (chenilla)",
+      "proveedor": "Taller Artesanal Manos de Mar",
+      "stock_inicial": 4,
+      "fotos": [
+        "cro-lla-001-1.webp"
+      ],
+      "fotos_medidas": [
+        "cro-lla-001-2.webp"
+      ]
+    },
+    {
+      "codigo": "CRO-LLA-002",
+      "nombre": "Llavero Minion",
+      "descripcion": "Llavero amigurumi tejido a mano, con argolla metálica. Mide 10 cm de alto y 6 cm de ancho.",
+      "precio": 5000,
+      "categoria": "Llaveros de crochet",
+      "material": "Hilo acrílico",
+      "proveedor": "Taller Artesanal Manos de Mar",
+      "stock_inicial": 3,
+      "fotos": [
+        "cro-lla-002-1.webp"
+      ],
+      "fotos_medidas": [
+        "cro-lla-002-2.webp"
+      ]
+    },
+    {
+      "codigo": "CRO-LLA-003",
+      "nombre": "Llavero conejito orejón",
+      "descripcion": "Conejito de felpa rosado con argolla metálica, tejido a mano. Mide 8 cm de alto y 5 cm de ancho.",
+      "precio": 4500,
+      "categoria": "Llaveros de crochet",
+      "material": "Hilo de felpa (chenilla)",
+      "proveedor": "Taller Artesanal Manos de Mar",
+      "stock_inicial": 4,
+      "fotos": [
+        "cro-lla-003-1.webp",
+        "cro-lla-003-2.webp"
+      ],
+      "fotos_medidas": [
+        "cro-lla-003-3.webp"
+      ]
+    },
+    {
+      "codigo": "CRO-DEC-001",
+      "nombre": "Flor tejida en maceta",
+      "descripcion": "Flor morada de crochet en maceta roja. Mide 11 cm de alto; la maceta mide 6,5 cm.",
+      "precio": 6000,
+      "categoria": "Decoración",
+      "material": "Hilo acrílico",
+      "proveedor": "Taller Artesanal Manos de Mar",
+      "stock_inicial": 3,
+      "fotos": [
+        "cro-dec-001-2.webp"
+      ],
+      "fotos_medidas": [
+        "cro-dec-001-1.webp"
+      ]
+    },
+    {
+      "codigo": "LLA-101",
+      "nombre": "Llaveros corazón para compartir",
+      "descripcion": "Par de llaveros que juntos forman un corazón, con imagen impresa en acrílico y argolla metálica. Diseños variados.",
+      "precio": 4000,
+      "categoria": "Llaveros",
+      "material": "Acrílico impreso",
+      "proveedor": "Distribuidora Encanto",
+      "stock_inicial": 8,
+      "fotos": [
+        "lla-101-1.webp",
+        "lla-101-2.webp",
+        "lla-101-3.webp",
+        "lla-101-4.webp"
+      ]
+    },
+    {
+      "codigo": "LLA-102",
+      "nombre": "Mini llaveros de acrílico",
+      "descripcion": "Llaveritos de acrílico con cadenita de bolitas. Diseños de gatitos, fantasmas y más (precio por unidad).",
+      "precio": 1500,
+      "categoria": "Llaveros",
+      "material": "Acrílico impreso",
+      "proveedor": "Distribuidora Encanto",
+      "stock_inicial": 10,
+      "fotos": [
+        "lla-102-1.webp",
+        "lla-102-2.webp"
+      ]
+    },
+    {
+      "codigo": "LLA-103",
+      "nombre": "Llaveros púa con estrella (pareja)",
+      "descripcion": "Par de llaveros en forma de púa de guitarra con estrella metálica e imagen impresa. Diseños variados.",
+      "precio": 3500,
+      "categoria": "Llaveros",
+      "material": "Acrílico impreso",
+      "proveedor": "Distribuidora Encanto",
+      "stock_inicial": 6,
+      "fotos": [
+        "lla-103-1.webp",
+        "lla-103-2.webp"
+      ]
+    }
+  ]
+}

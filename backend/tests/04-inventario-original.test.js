@@ -1,40 +1,40 @@
 // =====================================================================
-// Pruebas automáticas de la API (equivale a probar con Postman o Thunder Client).
+// Pruebas del inventario ORIGINAL (las mismas 135 comprobaciones de la
+// versión 1: CRUD de las 6 entidades, reglas del stock, transacciones,
+// máximo de 67, errores 400/404/409 y CORS), ahora con sesión de
+// administrador (contraseña + MFA) y token CSRF.
 //
-// Uso (desde la carpeta backend, con el backend encendido en otra terminal
-// y después de haber ejecutado script.sql y npm run seed):
-//   npm run probar-api
-//
-// Qué hace:
-//   - Prueba los 5 endpoints de las 6 entidades.
-//   - Prueba los casos de error (400, 404, 409) y las reglas del stock.
-//   - Crea registros de prueba con el prefijo "ZZ Prueba" y los BORRA al final,
-//     así que sus datos quedan como estaban.
+// Cambio de la versión 2: el empleado de cada movimiento sale de la sesión.
+// Por eso la antigua prueba "empleado que no existe -> 400" ahora comprueba
+// que el id_empleado enviado por el navegador se IGNORA.
 // =====================================================================
+import './entorno.js';
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { prepararBase, cerrar, sesionDe } from './ayudante.js';
 
-const API = process.env.API_URL || 'http://localhost:3000/api';
+let navegador;
+let cuentaAdmin;
 const SUFIJO = Date.now().toString().slice(-6); // para que los nombres no choquen
 const resultados = [];
 
 // Hace una petición y devuelve { status, datos, headers }.
+// Hace una petición con la sesión del administrador y devuelve { status, datos, headers }.
 async function peticion(metodo, ruta, cuerpo, opciones = {}) {
-  const config = { method: metodo, headers: { ...(opciones.headers || {}) } };
+  const url = `/api${ruta}`;
+  let r;
   if (opciones.cuerpoCrudo !== undefined) {
-    config.headers['Content-Type'] = 'application/json';
-    config.body = opciones.cuerpoCrudo;
-  } else if (cuerpo !== undefined) {
-    config.headers['Content-Type'] = 'application/json';
-    config.body = JSON.stringify(cuerpo);
+    if (!navegador.csrf) await navegador.obtenerCsrf();
+    r = await navegador.agente[metodo.toLowerCase()](url).set('X-CSRF-Token', navegador.csrf).set('Content-Type', 'application/json').send(opciones.cuerpoCrudo);
+  } else if (metodo === 'GET') {
+    let req = navegador.get(url);
+    for (const [k, v] of Object.entries(opciones.headers || {})) req = req.set(k, v);
+    r = await req;
+  } else {
+    r = await navegador.enviar(metodo.toLowerCase(), url, cuerpo);
   }
-  const respuesta = await fetch(`${API}${ruta}`, config);
-  const texto = await respuesta.text();
-  let datos;
-  try {
-    datos = JSON.parse(texto);
-  } catch {
-    datos = { noEsJson: texto };
-  }
-  return { status: respuesta.status, datos, headers: respuesta.headers };
+  const datos = r.body && Object.keys(r.body).length > 0 ? r.body : (r.text ? (() => { try { return JSON.parse(r.text); } catch { return { noEsJson: r.text }; } })() : {});
+  return { status: r.status, datos, headers: { get: (nombre) => r.headers[nombre.toLowerCase()] ?? null } };
 }
 
 function verificar(grupo, descripcion, condicion, detalle = '') {
@@ -99,11 +99,8 @@ async function eliminarYVerificar(grupo, ruta, id) {
 }
 
 async function main() {
-  const salud = await peticion('GET', '/salud').catch(() => null);
-  if (!salud || salud.status !== 200) {
-    console.error(`No se pudo contactar la API en ${API}. Encienda el backend (npm run dev) e intente de nuevo.`);
-    process.exit(1);
-  }
+  const salud = await peticion('GET', '/salud');
+  verificar('Configuración', 'GET /salud -> 200', salud.status === 200);
 
   const config = await peticion('GET', '/configuracion');
   const MAX = config.datos.stock_maximo;
@@ -169,6 +166,7 @@ async function main() {
 
   // ---------------- Movimientos y reglas del stock ----------------
   const G = 'Movimientos';
+  // id_empleado se manda a propósito: el backend debe ignorarlo y usar el de la sesión.
   const mov = (tipo, cantidad, idProd = idProducto) => ({ id_producto: idProd, id_empleado: idEmpleado, tipo, cantidad, fecha: '2026-11-04', motivo: 'Prueba automática' });
 
   const entrada = await peticion('POST', '/movimientos', mov('entrada', 60));
@@ -222,7 +220,9 @@ async function main() {
   esperarError(G, 'POST con fecha imposible (2026-02-30)', await peticion('POST', '/movimientos', { ...mov('entrada', 1), fecha: '2026-02-30' }), 400);
   esperarError(G, 'POST con fecha sin formato', await peticion('POST', '/movimientos', { ...mov('entrada', 1), fecha: '04/11/2026' }), 400);
   esperarError(G, 'POST con producto que no existe (FK)', await peticion('POST', '/movimientos', mov('entrada', 1, 999999)), 400);
-  esperarError(G, 'POST con empleado que no existe (FK)', await peticion('POST', '/movimientos', { ...mov('entrada', 1), id_empleado: 999999 }), 400);
+  const conEmpleadoFalso = await peticion('POST', '/movimientos', { ...mov('entrada', 1), id_empleado: 999999 });
+  verificar(G, 'POST con id_empleado inventado: se ignora y se usa el empleado de la sesión -> 201', conEmpleadoFalso.status === 201 && conEmpleadoFalso.datos.id_empleado === cuentaAdmin.idEmpleado, `HTTP ${conEmpleadoFalso.status} empleado=${conEmpleadoFalso.datos.id_empleado}`);
+  await peticion('DELETE', `/movimientos/${conEmpleadoFalso.datos.id_movimiento}`);
   esperarError(G, 'POST sin datos', await peticion('POST', '/movimientos', {}), 400);
   esperarError(G, 'GET id inexistente', await peticion('GET', '/movimientos/999999'), 404);
   esperarError(G, 'PUT id inexistente', await peticion('PUT', '/movimientos/999999', mov('entrada', 1)), 404);
@@ -234,7 +234,7 @@ async function main() {
   esperarError(D, 'DELETE proveedor con productos', await peticion('DELETE', `/proveedores/${idProveedor}`), 409);
   esperarError(D, 'DELETE material con productos', await peticion('DELETE', `/materiales/${idMaterial}`), 409);
   esperarError(D, 'DELETE producto con movimientos', await peticion('DELETE', `/productos/${idProducto}`), 409);
-  esperarError(D, 'DELETE empleado con movimientos', await peticion('DELETE', `/empleados/${idEmpleado}`), 409);
+  esperarError(D, 'DELETE empleado con movimientos (el de la sesión)', await peticion('DELETE', `/empleados/${cuentaAdmin.idEmpleado}`), 409);
 
   // ---------------- Errores generales ----------------
   const E = 'Errores generales';
@@ -264,21 +264,28 @@ async function main() {
   await eliminarYVerificar('Materiales', '/materiales', idMaterial);
   await eliminarYVerificar('Empleados', '/empleados', idEmpleado);
 
-  // ---------------- Resumen ----------------
-  let grupoActual = '';
-  for (const r of resultados) {
-    if (r.grupo !== grupoActual) {
-      grupoActual = r.grupo;
-      console.log(`\n${grupoActual}`);
-    }
-    console.log(`  ${r.ok ? 'OK   ' : 'FALLA'} ${r.descripcion}${r.ok ? '' : `   (${r.detalle})`}`);
-  }
-  const fallas = resultados.filter((r) => !r.ok).length;
-  console.log(`\nTotal: ${resultados.length} pruebas, ${resultados.length - fallas} correctas, ${fallas} con falla.`);
-  process.exitCode = fallas > 0 ? 1 : 0;
+  return resultados;
 }
 
-main().catch((error) => {
-  console.error('Error al ejecutar las pruebas:', error.message);
-  process.exitCode = 1;
+before(async () => {
+  await prepararBase();
+  ({ navegador, cuenta: cuentaAdmin } = await sesionDe('administrador'));
+});
+after(cerrar);
+
+test('Inventario original: CRUD, reglas del stock, transacciones y errores (con rol administrador)', async () => {
+  const todas = await main();
+  const fallas = todas.filter((r) => !r.ok);
+  console.log(`Comprobaciones: ${todas.length}, correctas: ${todas.length - fallas.length}`);
+  assert.deepEqual(fallas.map((f) => `${f.grupo}: ${f.descripcion} (${f.detalle})`), []);
+  assert.ok(todas.length >= 135, `se esperaban al menos 135 comprobaciones y hubo ${todas.length}`);
+});
+
+test('Inventario original: los roles sin permiso reciben 403 (cliente, proveedor y ventas)', async () => {
+  for (const rol of ['cliente', 'proveedor', 'ventas']) {
+    const { navegador: otro } = await sesionDe(rol);
+    assert.equal((await otro.get('/api/categorias')).status, 403, `${rol} GET categorias`);
+    assert.equal((await otro.post('/api/movimientos', { id_producto: 1, tipo: 'entrada', cantidad: 1, fecha: '2026-11-05' })).status, 403, `${rol} POST movimientos`);
+    assert.equal((await otro.delete('/api/productos/1')).status, 403, `${rol} DELETE productos`);
+  }
 });

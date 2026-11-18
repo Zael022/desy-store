@@ -24,7 +24,13 @@ Desy vende aretes, collares, pulseras, anillos y accesorios para el cabello que 
 
 ## Quién usará la aplicación
 
-La dueña y las personas que atienden la tienda (vendedoras y encargada de bodega), desde la computadora del local o desde el celular.
+Versión 2: cinco tipos de personas, cada una con su propia pantalla y verificación en dos pasos:
+
+- **Dueña:** todo, más el dashboard de costos y ganancias, la configuración y los roles del personal.
+- **Administración:** inventario, proveedores, empleados, abastecimiento, cuentas de ventas y proveedores, auditoría.
+- **Ventas:** punto de venta, sus ventas y devoluciones.
+- **Proveedores:** sus productos y los pedidos de la tienda.
+- **Clientes:** catálogo (con disponibilidad) y su historial de compras.
 
 ## Funcionalidades incluidas
 
@@ -33,11 +39,13 @@ La dueña y las personas que atienden la tienda (vendedoras y encargada de bodeg
 - Mensajes claros cuando algo no se puede hacer (datos inválidos, duplicados, registros con dependencias, límites del stock).
 - Catálogo de productos con buscador, filtros y orden, y una ficha por producto desde la que se registran entradas y salidas.
 - Página de inicio con anuncios, categorías, productos con poco stock, resumen y gráfico de stock por producto.
+- (v2) Cuentas con contraseña + código por correo o SMS, permisos por rol revisados en el backend, recuperación de contraseña e invitaciones.
+- (v2) Punto de venta y devoluciones conectados al inventario, solicitudes de abastecimiento, dashboard ejecutivo, auditoría y configuración.
 
 ## Fuera del alcance
 
-- Inicio de sesión, usuarios, contraseñas, roles o permisos.
-- Ventas con factura, caja, pagos en línea o servicios externos.
+- Carrito de compras y pagos en línea (las ventas se registran en la tienda, en el punto de venta).
+- Factura electrónica y caja.
 - Fotos de los productos.
 - Reportes en PDF o Excel.
 - Varias sucursales o bodegas.

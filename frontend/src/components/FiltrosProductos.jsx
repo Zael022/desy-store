@@ -2,17 +2,21 @@
 // No llama a la API: solo cambia los filtros y ProductosPage decide qué productos mostrar.
 // En pantallas pequeñas la tarjeta se pliega y muestra un botón "Filtros (n)".
 // filtros = { precioMin, precioMax, categorias: [ids], materiales: [ids], proveedores: [ids], disponibilidad }
+// En el catálogo público no se pasan "proveedores" (esa sección no aparece) y se
+// usan otras opciones de disponibilidad (sin números de stock).
 import { useState } from 'react';
 import { ChevronDown, FilterX } from 'lucide-react';
 import SeccionFiltro from './SeccionFiltro.jsx';
 import Boton from './Boton.jsx';
+import { contarProductos, ordenarJerarquia } from '../utils/categorias.js';
 
-const OPCIONES_DISPONIBILIDAD = [
+const OPCIONES_INVENTARIO = [
   { valor: 'todos', texto: 'Todos' },
   { valor: 'con-stock', texto: 'Con stock' },
   { valor: 'agotados', texto: 'Agotados' },
   { valor: 'casi-llenos', texto: 'Casi llenos (90 % del máximo)' }
 ];
+
 
 // Lista de casillas (una por categoría, material o proveedor) con cuántos productos tiene cada una.
 function ListaCasillas({ nombre, opciones, llave, seleccionados, productos, alCambiar }) {
@@ -40,7 +44,34 @@ function ListaCasillas({ nombre, opciones, llave, seleccionados, productos, alCa
   );
 }
 
-export default function FiltrosProductos({ filtros, alCambiar, alLimpiar, productos, categorias, materiales, proveedores }) {
+// Categorías: cada principal y, con sangría, sus subcategorías (Crochet > Peluches...).
+// Marcar una principal incluye sus subcategorías; su número ya las cuenta.
+function ListaCategorias({ categorias, seleccionados, productos, alCambiar }) {
+  function alternar(id) {
+    const nuevos = seleccionados.includes(id) ? seleccionados.filter((x) => x !== id) : [...seleccionados, id];
+    alCambiar('categorias', nuevos);
+  }
+
+  return (
+    <ul className="lista-casillas">
+      {ordenarJerarquia(categorias).map((categoria) => {
+        const id = categoria.id_categoria;
+        const incluidaPorPadre = categoria.nivel === 1 && seleccionados.includes(categoria.id_categoria_padre);
+        return (
+          <li key={id} className={categoria.nivel === 1 ? 'casilla-subnivel' : undefined}>
+            <label>
+              <input type="checkbox" checked={incluidaPorPadre || seleccionados.includes(id)} disabled={incluidaPorPadre} onChange={() => alternar(id)} />
+              <span>{categoria.nombre}</span>
+              <span className="casilla-cantidad">{contarProductos(productos, id, categorias)}</span>
+            </label>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export default function FiltrosProductos({ filtros, alCambiar, alLimpiar, productos, categorias, materiales, proveedores = null, opcionesDisponibilidad = OPCIONES_INVENTARIO }) {
   const [abiertoEnCelular, setAbiertoEnCelular] = useState(false);
   const precioActivo = (filtros.precioMin !== '' ? 1 : 0) + (filtros.precioMax !== '' ? 1 : 0);
   const totalActivos =
@@ -72,20 +103,22 @@ export default function FiltrosProductos({ filtros, alCambiar, alLimpiar, produc
         </SeccionFiltro>
 
         <SeccionFiltro id="filtro-categoria" titulo="Categoría" activos={filtros.categorias.length}>
-          <ListaCasillas nombre="categorias" opciones={categorias} llave="id_categoria" seleccionados={filtros.categorias} productos={productos} alCambiar={alCambiar} />
+          <ListaCategorias categorias={categorias} seleccionados={filtros.categorias} productos={productos} alCambiar={alCambiar} />
         </SeccionFiltro>
 
         <SeccionFiltro id="filtro-material" titulo="Material" activos={filtros.materiales.length}>
           <ListaCasillas nombre="materiales" opciones={materiales} llave="id_material" seleccionados={filtros.materiales} productos={productos} alCambiar={alCambiar} />
         </SeccionFiltro>
 
-        <SeccionFiltro id="filtro-proveedor" titulo="Proveedor" activos={filtros.proveedores.length}>
-          <ListaCasillas nombre="proveedores" opciones={proveedores} llave="id_proveedor" seleccionados={filtros.proveedores} productos={productos} alCambiar={alCambiar} />
-        </SeccionFiltro>
+        {proveedores && (
+          <SeccionFiltro id="filtro-proveedor" titulo="Proveedor" activos={filtros.proveedores.length}>
+            <ListaCasillas nombre="proveedores" opciones={proveedores} llave="id_proveedor" seleccionados={filtros.proveedores} productos={productos} alCambiar={alCambiar} />
+          </SeccionFiltro>
+        )}
 
         <SeccionFiltro id="filtro-disponibilidad" titulo="Disponibilidad" activos={filtros.disponibilidad !== 'todos' ? 1 : 0}>
           <ul className="lista-casillas">
-            {OPCIONES_DISPONIBILIDAD.map((opcion) => (
+            {opcionesDisponibilidad.map((opcion) => (
               <li key={opcion.valor}>
                 <label>
                   <input

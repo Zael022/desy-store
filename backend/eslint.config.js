@@ -14,7 +14,7 @@ export default [
       globals: globals.node
     },
     rules: {
-      'no-unused-vars': ['error', { args: 'after-used', argsIgnorePattern: '^_' }]
+      'no-unused-vars': ['error', { args: 'after-used', argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' }]
     }
   }
 ];

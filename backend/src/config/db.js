@@ -15,9 +15,28 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   // Devuelve DECIMAL (precio) como número y no como texto.
   decimalNumbers: true,
-  // Devuelve DATE (fecha) como texto "AAAA-MM-DD" y no como objeto Date,
-  // así no hay problemas de zona horaria.
+  // Devuelve DATE y DATETIME como texto ("AAAA-MM-DD" o "AAAA-MM-DD HH:MM:SS")
+  // y no como objeto Date, así no hay problemas de zona horaria.
   dateStrings: true
 });
+
+// Ejecuta "trabajo" dentro de una TRANSACCIÓN.
+// Analogía: una transferencia bancaria. El dinero no puede salir de una cuenta
+// sin llegar a la otra: o se guardan todos los cambios (COMMIT) o ninguno (ROLLBACK).
+// "trabajo" recibe la conexión y debe usarla para todas sus consultas.
+export async function enTransaccion(trabajo) {
+  const conexion = await pool.getConnection();
+  try {
+    await conexion.beginTransaction();
+    const resultado = await trabajo(conexion);
+    await conexion.commit();
+    return resultado;
+  } catch (error) {
+    await conexion.rollback();
+    throw error;
+  } finally {
+    conexion.release(); // devuelve la conexión al pool
+  }
+}
 
 export default pool;

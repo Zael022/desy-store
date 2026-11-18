@@ -4,6 +4,7 @@ import * as categoriaModel from '../models/categoriaModel.js';
 import * as proveedorModel from '../models/proveedorModel.js';
 import * as materialModel from '../models/materialModel.js';
 import { ErrorHttp } from '../middleware/errores.js';
+import { borrarArchivo } from '../servicios/fotos.js';
 import {
   obtenerCuerpo,
   validarId,
@@ -13,6 +14,23 @@ import {
 } from '../middleware/validaciones.js';
 
 const PRECIO_MAXIMO = 99999999.99; // lo máximo que cabe en DECIMAL(10,2)
+
+// El costo unitario es información de la dueña: solo ella lo ve y lo cambia.
+const MENSAJE_COSTO = 'Solo la dueña puede ver y cambiar el costo unitario.';
+
+function sinCosto(producto, rol) {
+  if (!producto || rol === 'duena') return producto;
+  const { costo_unitario: _costo, ...resto } = producto;
+  return resto;
+}
+
+// Lee costo_unitario del cuerpo según el rol. Devuelve {} si no corresponde tocarlo.
+function validarCosto(cuerpo, rol) {
+  if (!Object.hasOwn(cuerpo, 'costo_unitario')) return {};
+  if (rol !== 'duena') throw new ErrorHttp(403, MENSAJE_COSTO);
+  if (cuerpo.costo_unitario === null || cuerpo.costo_unitario === '') return { costo_unitario: null };
+  return { costo_unitario: decimalEnRango(cuerpo.costo_unitario, 'El costo unitario', 0, PRECIO_MAXIMO, 2) };
+}
 
 function validarDatos(cuerpo) {
   // El stock no se edita aquí: solo cambia con entradas y salidas.
@@ -58,7 +76,8 @@ async function buscarOFallar(id) {
 // GET /api/productos
 export async function listarProductos(req, res, next) {
   try {
-    res.status(200).json(await productoModel.listar());
+    const productos = await productoModel.listar();
+    res.status(200).json(productos.map((p) => sinCosto(p, req.usuario.rol)));
   } catch (error) {
     next(error);
   }
@@ -68,7 +87,7 @@ export async function listarProductos(req, res, next) {
 export async function obtenerProducto(req, res, next) {
   try {
     const id = validarId(req.params.id);
-    res.status(200).json(await buscarOFallar(id));
+    res.status(200).json(sinCosto(await buscarOFallar(id), req.usuario.rol));
   } catch (error) {
     next(error);
   }
@@ -77,10 +96,11 @@ export async function obtenerProducto(req, res, next) {
 // POST /api/productos
 export async function crearProducto(req, res, next) {
   try {
-    const datos = validarDatos(obtenerCuerpo(req));
+    const cuerpo = obtenerCuerpo(req);
+    const datos = { ...validarDatos(cuerpo), ...validarCosto(cuerpo, req.usuario.rol) };
     await validarLlavesForaneas(datos);
     const idNuevo = await productoModel.crear(datos);
-    res.status(201).json(await productoModel.obtenerPorId(idNuevo));
+    res.status(201).json(sinCosto(await productoModel.obtenerPorId(idNuevo), req.usuario.rol));
   } catch (error) {
     next(error);
   }
@@ -91,10 +111,11 @@ export async function actualizarProducto(req, res, next) {
   try {
     const id = validarId(req.params.id);
     await buscarOFallar(id);
-    const datos = validarDatos(obtenerCuerpo(req));
+    const cuerpo = obtenerCuerpo(req);
+    const datos = { ...validarDatos(cuerpo), ...validarCosto(cuerpo, req.usuario.rol) };
     await validarLlavesForaneas(datos);
     await productoModel.actualizar(id, datos);
-    res.status(200).json(await productoModel.obtenerPorId(id));
+    res.status(200).json(sinCosto(await productoModel.obtenerPorId(id), req.usuario.rol));
   } catch (error) {
     next(error);
   }
@@ -109,7 +130,8 @@ export async function eliminarProducto(req, res, next) {
     if (totalMovimientos > 0) {
       throw new ErrorHttp(409, `No se puede eliminar el producto "${producto.nombre}" porque tiene ${totalMovimientos} movimiento(s) de inventario registrados.`);
     }
-    await productoModel.eliminar(id);
+    const archivos = await productoModel.eliminar(id);
+    for (const archivo of archivos) await borrarArchivo(archivo);
     res.status(200).json({ message: 'Producto eliminado correctamente.', id });
   } catch (error) {
     next(error);

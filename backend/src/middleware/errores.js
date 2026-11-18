@@ -18,7 +18,11 @@ const MENSAJES_DUPLICADOS = {
   uq_proveedores_correo: 'Ya existe un proveedor con ese correo.',
   uq_materiales_nombre: 'Ya existe un material con ese nombre.',
   uq_empleados_correo: 'Ya existe un empleado con ese correo.',
-  uq_productos_codigo: 'Ya existe un producto con ese código.'
+  uq_productos_codigo: 'Ya existe un producto con ese código.',
+  uq_usuarios_correo: 'Ya existe una cuenta con ese correo.',
+  uq_usuarios_empleado: 'Ese empleado ya tiene una cuenta de usuario.',
+  uq_usuarios_proveedor: 'Ese proveedor ya tiene una cuenta de usuario.',
+  uq_ventas_clave: 'Esa venta ya fue registrada.'
 };
 
 // Errores de conexión a MySQL (servidor apagado, contraseña incorrecta, BD inexistente).

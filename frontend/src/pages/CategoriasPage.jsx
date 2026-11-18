@@ -1,5 +1,7 @@
 // Página de Categorías: formulario (crear/editar) + tabla (listar) + eliminar con modal.
 // Las demás páginas siguen exactamente este mismo patrón.
+// Subcategorías: en "Dentro de" se elige una categoría principal (por ejemplo,
+// Peluches dentro de Crochet). Solo hay dos niveles: el backend también lo revisa.
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Plus, Save, X } from 'lucide-react';
@@ -11,11 +13,13 @@ import TablaDatos from '../components/TablaDatos.jsx';
 import ModalConfirmacion from '../components/ModalConfirmacion.jsx';
 import { Cargando, ErrorCarga, SinRegistros } from '../components/EstadoLista.jsx';
 import { listarCategorias, crearCategoria, actualizarCategoria, eliminarCategoria } from '../services/categoriasService.js';
+import { ordenarJerarquia } from '../utils/categorias.js';
 
-const FORMULARIO_VACIO = { nombre: '', descripcion: '' };
+const FORMULARIO_VACIO = { nombre: '', descripcion: '', id_categoria_padre: '' };
 
 const COLUMNAS = [
-  { clave: 'nombre', titulo: 'Nombre' },
+  { clave: 'nombre', titulo: 'Nombre', mostrar: (c) => (c.nivel === 1 ? <span className="categoria-hija">↳ {c.nombre}</span> : <strong>{c.nombre}</strong>) },
+  { clave: 'nombre_padre', titulo: 'Dentro de', mostrar: (c) => c.nombre_padre ?? '—' },
   { clave: 'descripcion', titulo: 'Descripción' },
   { clave: 'total_productos', titulo: 'Productos' }
 ];
@@ -69,7 +73,7 @@ export default function CategoriasPage() {
 
   function empezarEdicion(categoria) {
     setIdEditando(categoria.id_categoria);
-    setFormulario({ nombre: categoria.nombre, descripcion: categoria.descripcion ?? '' });
+    setFormulario({ nombre: categoria.nombre, descripcion: categoria.descripcion ?? '', id_categoria_padre: categoria.id_categoria_padre ? String(categoria.id_categoria_padre) : '' });
     setErrorFormulario('');
     refFormulario.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -84,7 +88,11 @@ export default function CategoriasPage() {
     evento.preventDefault(); // evita que el navegador recargue la página
     setGuardando(true);
     setErrorFormulario('');
-    const datos = { nombre: formulario.nombre, descripcion: formulario.descripcion };
+    const datos = {
+      nombre: formulario.nombre,
+      descripcion: formulario.descripcion,
+      id_categoria_padre: formulario.id_categoria_padre === '' ? null : Number(formulario.id_categoria_padre)
+    };
     try {
       if (idEditando) {
         await actualizarCategoria(idEditando, datos);
@@ -119,9 +127,17 @@ export default function CategoriasPage() {
     }
   }
 
+  // Solo una categoría principal (sin "Dentro de") puede tener subcategorías,
+  // y una categoría que ya tiene subcategorías no puede quedar dentro de otra.
+  const editando = categorias.find((c) => c.id_categoria === idEditando);
+  const tieneHijas = (editando?.total_subcategorias ?? 0) > 0;
+  const opcionesPadre = categorias
+    .filter((c) => !c.id_categoria_padre && c.id_categoria !== idEditando)
+    .map((c) => ({ valor: String(c.id_categoria), texto: c.nombre }));
+
   return (
     <PaginaAnimada>
-      <EncabezadoPagina ruta={['Inventario', 'Categorías']} descripcion="Tipos de producto que vende la tienda (aretes, collares, pulseras...)." />
+      <EncabezadoPagina ruta={['Inventario', 'Categorías']} descripcion="Tipos de producto que vende la tienda (aretes, collares, crochet...). Una categoría puede tener subcategorías." />
 
       <div className="disposicion-crud">
         <form ref={refFormulario} className="tarjeta formulario" onSubmit={guardar} noValidate>
@@ -132,6 +148,17 @@ export default function CategoriasPage() {
             </p>
           )}
           <CampoFormulario id="nombre" etiqueta="Nombre" valor={formulario.nombre} alCambiar={cambiarCampo} obligatorio maxLength={60} placeholder="Ejemplo: Tobilleras" />
+          <CampoFormulario
+            id="id_categoria_padre"
+            etiqueta="Dentro de (opcional)"
+            tipo="select"
+            valor={formulario.id_categoria_padre}
+            alCambiar={cambiarCampo}
+            opciones={opcionesPadre}
+            textoOpcionVacia="Ninguna: es una categoría principal"
+            disabled={tieneHijas}
+            ayuda={tieneHijas ? 'Esta categoría tiene subcategorías, así que se queda como principal.' : 'Por ejemplo: "Peluches" va dentro de "Crochet".'}
+          />
           <CampoFormulario id="descripcion" etiqueta="Descripción" tipo="textarea" valor={formulario.descripcion} alCambiar={cambiarCampo} maxLength={255} />
           <div className="formulario-acciones">
             <Boton type="submit" icono={idEditando ? Save : Plus} cargando={guardando} disabled={eliminando}>
@@ -156,7 +183,7 @@ export default function CategoriasPage() {
           ) : (
             <TablaDatos
               columnas={COLUMNAS}
-              filas={categorias}
+              filas={ordenarJerarquia(categorias)}
               llave="id_categoria"
               idEditando={idEditando}
               ocupado={ocupado}

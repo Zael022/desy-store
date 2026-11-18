@@ -6,6 +6,9 @@ node_modules/
 .env.*
 !.env.example
 
+# Fotos subidas desde la aplicación (las iniciales están en backend/database/fotos)
+backend/uploads/
+
 # Build del frontend
 dist/
 

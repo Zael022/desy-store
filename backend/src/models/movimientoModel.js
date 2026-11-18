@@ -1,18 +1,22 @@
 // Modelo de movimientos: entradas y salidas de mercadería.
-// Aquí está la LÓGICA DEL STOCK.
+// Aquí está la LÓGICA DEL STOCK, y es la ÚNICA forma de cambiar el stock:
+// el CRUD de movimientos, las ventas, las devoluciones y el abastecimiento
+// usan todos la función registrarMovimiento() de este archivo.
 //
 // Cada operación cambia DOS tablas (movimientos y productos), así que se hace
 // dentro de una TRANSACCIÓN: o se guardan los dos cambios, o no se guarda
 // ninguno. Es como una transferencia bancaria: el dinero no puede salir de
 // una cuenta sin llegar a la otra.
-import pool from '../config/db.js';
+import pool, { enTransaccion } from '../config/db.js';
 import { STOCK_MINIMO, STOCK_MAXIMO } from '../config/constantes.js';
 import { ErrorHttp } from '../middleware/errores.js';
+import { unidadesApartadas } from './apartados.js';
 
 const SELECT_MOVIMIENTOS = `
   SELECT mo.id_movimiento, mo.id_producto, p.codigo AS codigo_producto, p.nombre AS nombre_producto,
          p.stock AS stock_actual, mo.id_empleado, e.nombre AS nombre_empleado,
-         mo.tipo, mo.cantidad, mo.fecha, mo.motivo
+         mo.tipo, mo.cantidad, mo.fecha, mo.motivo,
+         mo.id_venta, mo.id_devolucion, mo.id_solicitud
     FROM movimientos mo
     JOIN productos p ON p.id_producto = mo.id_producto
     JOIN empleados e ON e.id_empleado = mo.id_empleado`;
@@ -44,59 +48,89 @@ function verificarRango(nuevoStock, mensajeExceso, mensajeNegativo) {
 
 // Lee un producto y BLOQUEA su fila (FOR UPDATE) hasta que termine la transacción,
 // para que dos personas no cambien el mismo stock al mismo tiempo.
-async function bloquearProducto(conexion, idProducto) {
+export async function bloquearProducto(conexion, idProducto) {
   const [filas] = await conexion.execute(
-    'SELECT id_producto, nombre, stock FROM productos WHERE id_producto = ? FOR UPDATE',
+    'SELECT id_producto, codigo, nombre, stock, precio, costo_unitario FROM productos WHERE id_producto = ? FOR UPDATE',
     [idProducto]
   );
   if (filas.length === 0) throw new ErrorHttp(400, 'El producto seleccionado no existe.');
   return filas[0];
 }
 
-async function guardarStock(conexion, idProducto, nuevoStock) {
-  await conexion.execute('UPDATE productos SET stock = ? WHERE id_producto = ?', [nuevoStock, idProducto]);
+// Guarda el stock nuevo. Si BAJA, revisa que no se lleve unidades apartadas en pedidos
+// de clientes (pendientes o confirmados): esas ya tienen dueño.
+async function guardarStock(conexion, producto, nuevoStock) {
+  if (nuevoStock < producto.stock) {
+    const apartado = await unidadesApartadas(conexion, producto.id_producto);
+    if (nuevoStock < apartado) {
+      const libres = Math.max(producto.stock - apartado, 0);
+      throw new ErrorHttp(
+        409,
+        `"${producto.nombre}" tiene ${apartado} unidad(es) apartadas en pedidos de clientes. ` +
+          (libres === 0 ? 'No quedan unidades libres para sacar.' : `Solo se pueden sacar ${libres}.`)
+      );
+    }
+  }
+  await conexion.execute('UPDATE productos SET stock = ? WHERE id_producto = ?', [nuevoStock, producto.id_producto]);
 }
 
-// Ejecuta "trabajo" dentro de una transacción.
-// Si todo sale bien: COMMIT (se guardan los cambios).
-// Si algo falla: ROLLBACK (se deshace todo) y el error sigue hacia el controlador.
-async function enTransaccion(trabajo) {
-  const conexion = await pool.getConnection();
-  try {
-    await conexion.beginTransaction();
-    const resultado = await trabajo(conexion);
-    await conexion.commit();
-    return resultado;
-  } catch (error) {
-    await conexion.rollback();
-    throw error;
-  } finally {
-    conexion.release(); // devuelve la conexión al pool
+// Un movimiento creado por una venta, devolución o solicitud no se edita ni se borra a mano.
+function verificarQueNoEsAutomatico(movimiento) {
+  if (movimiento.id_venta) {
+    throw new ErrorHttp(409, `Este movimiento pertenece a la venta #${movimiento.id_venta}. Las ventas no se editan: corrija con una devolución.`);
+  }
+  if (movimiento.id_devolucion) {
+    throw new ErrorHttp(409, `Este movimiento pertenece a la devolución #${movimiento.id_devolucion} y no se puede editar ni eliminar.`);
+  }
+  if (movimiento.id_solicitud) {
+    throw new ErrorHttp(409, `Este movimiento pertenece a la solicitud de abastecimiento #${movimiento.id_solicitud} y no se puede editar ni eliminar.`);
   }
 }
 
 // ---------------------------------------------------------------------
-// Crear: aplica el efecto del movimiento nuevo.
+// registrarMovimiento: LA función que cambia el stock.
+// Debe llamarse con una conexión que ya tiene una transacción abierta.
+//   datos: { id_producto, id_empleado, tipo, cantidad, fecha, motivo,
+//            id_venta?, id_devolucion?, id_solicitud? }
+//   mensajes (opcional): textos propios para el exceso o el faltante.
+// ---------------------------------------------------------------------
+export async function registrarMovimiento(conexion, datos, mensajes = {}) {
+  const producto = await bloquearProducto(conexion, datos.id_producto);
+  const nuevoStock = producto.stock + calcularEfecto(datos.tipo, datos.cantidad);
+
+  verificarRango(
+    nuevoStock,
+    mensajes.exceso?.(producto, nuevoStock) ??
+      `La entrada supera el stock máximo de ${STOCK_MAXIMO} unidades. "${producto.nombre}" tiene ${producto.stock}; como máximo puede ingresar ${STOCK_MAXIMO - producto.stock}.`,
+    mensajes.faltante?.(producto, nuevoStock) ??
+      `La salida deja el stock en negativo. "${producto.nombre}" solo tiene ${producto.stock} unidad(es) disponibles.`
+  );
+
+  const [resultado] = await conexion.execute(
+    `INSERT INTO movimientos (id_producto, id_empleado, tipo, cantidad, fecha, motivo, id_venta, id_devolucion, id_solicitud)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      datos.id_producto,
+      datos.id_empleado,
+      datos.tipo,
+      datos.cantidad,
+      datos.fecha,
+      datos.motivo ?? null,
+      datos.id_venta ?? null,
+      datos.id_devolucion ?? null,
+      datos.id_solicitud ?? null
+    ]
+  );
+  await guardarStock(conexion, producto, nuevoStock);
+  return { idMovimiento: resultado.insertId, stockAnterior: producto.stock, stockNuevo: nuevoStock, producto };
+}
+
+// ---------------------------------------------------------------------
+// Crear (CRUD de movimientos): abre la transacción y usa registrarMovimiento.
 // ---------------------------------------------------------------------
 export async function crear(datos) {
-  return enTransaccion(async (conexion) => {
-    const producto = await bloquearProducto(conexion, datos.id_producto);
-    const nuevoStock = producto.stock + calcularEfecto(datos.tipo, datos.cantidad);
-
-    verificarRango(
-      nuevoStock,
-      `La entrada supera el stock máximo de ${STOCK_MAXIMO} unidades. "${producto.nombre}" tiene ${producto.stock}; como máximo puede ingresar ${STOCK_MAXIMO - producto.stock}.`,
-      `La salida deja el stock en negativo. "${producto.nombre}" solo tiene ${producto.stock} unidad(es) disponibles.`
-    );
-
-    const [resultado] = await conexion.execute(
-      `INSERT INTO movimientos (id_producto, id_empleado, tipo, cantidad, fecha, motivo)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [datos.id_producto, datos.id_empleado, datos.tipo, datos.cantidad, datos.fecha, datos.motivo]
-    );
-    await guardarStock(conexion, producto.id_producto, nuevoStock);
-    return resultado.insertId;
-  });
+  const resultado = await enTransaccion((conexion) => registrarMovimiento(conexion, datos));
+  return resultado.idMovimiento;
 }
 
 // ---------------------------------------------------------------------
@@ -108,6 +142,7 @@ export async function actualizar(id, datos) {
     const [filas] = await conexion.execute('SELECT * FROM movimientos WHERE id_movimiento = ? FOR UPDATE', [id]);
     if (filas.length === 0) throw new ErrorHttp(404, 'El movimiento no existe.');
     const anterior = filas[0];
+    verificarQueNoEsAutomatico(anterior);
 
     const efectoAnterior = calcularEfecto(anterior.tipo, anterior.cantidad);
     const efectoNuevo = calcularEfecto(datos.tipo, datos.cantidad);
@@ -121,7 +156,7 @@ export async function actualizar(id, datos) {
         `El cambio supera el stock máximo de ${STOCK_MAXIMO} unidades: el stock de "${producto.nombre}" quedaría en ${nuevoStock}.`,
         `El cambio deja el stock en negativo: el stock de "${producto.nombre}" quedaría en ${nuevoStock}.`
       );
-      await guardarStock(conexion, producto.id_producto, nuevoStock);
+      await guardarStock(conexion, producto, nuevoStock);
     } else {
       // Cambió el producto: se revierte en el producto viejo y se aplica en el nuevo.
       // Se bloquean en orden de ID para evitar bloqueos cruzados.
@@ -145,8 +180,8 @@ export async function actualizar(id, datos) {
         `La salida deja el stock en negativo: "${productoNuevo.nombre}" quedaría con ${stockNuevoAplicado}.`
       );
 
-      await guardarStock(conexion, productoAnterior.id_producto, stockAnteriorRevertido);
-      await guardarStock(conexion, productoNuevo.id_producto, stockNuevoAplicado);
+      await guardarStock(conexion, productoAnterior, stockAnteriorRevertido);
+      await guardarStock(conexion, productoNuevo, stockNuevoAplicado);
     }
 
     await conexion.execute(
@@ -166,6 +201,7 @@ export async function eliminar(id) {
     const [filas] = await conexion.execute('SELECT * FROM movimientos WHERE id_movimiento = ? FOR UPDATE', [id]);
     if (filas.length === 0) throw new ErrorHttp(404, 'El movimiento no existe.');
     const movimiento = filas[0];
+    verificarQueNoEsAutomatico(movimiento);
 
     const producto = await bloquearProducto(conexion, movimiento.id_producto);
     const nuevoStock = producto.stock - calcularEfecto(movimiento.tipo, movimiento.cantidad);
@@ -176,7 +212,7 @@ export async function eliminar(id) {
     );
 
     await conexion.execute('DELETE FROM movimientos WHERE id_movimiento = ?', [id]);
-    await guardarStock(conexion, producto.id_producto, nuevoStock);
+    await guardarStock(conexion, producto, nuevoStock);
     return { stockResultante: nuevoStock, nombreProducto: producto.nombre };
   });
 }

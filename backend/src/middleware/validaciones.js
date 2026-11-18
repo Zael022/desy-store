@@ -141,3 +141,47 @@ export function validarFecha(valor, etiqueta) {
   }
   return valor;
 }
+
+// ---------------------------------------------------------------------
+// Validaciones de cuentas y seguridad
+// ---------------------------------------------------------------------
+
+// Correo obligatorio, en minúsculas y sin espacios (así "Ana@Correo.com" y "ana@correo.com" son la misma cuenta).
+export function correoObligatorio(valor, etiqueta = 'El correo') {
+  const correo = textoObligatorio(valor, etiqueta, 100).toLowerCase();
+  return validarCorreo(correo, etiqueta);
+}
+
+// Contraseña nueva: entre 8 y 128 caracteres (no se recorta: los espacios cuentan).
+export function contrasenaNueva(valor, etiqueta = 'La contraseña') {
+  if (typeof valor !== 'string' || valor.length === 0) {
+    throw new ErrorHttp(400, `${etiqueta} es un campo obligatorio.`);
+  }
+  if (valor.length < 8) throw new ErrorHttp(400, `${etiqueta} debe tener al menos 8 caracteres.`);
+  if (valor.length > 128) throw new ErrorHttp(400, `${etiqueta} no puede tener más de 128 caracteres.`);
+  return valor;
+}
+
+// Teléfono en formato internacional (E.164), por ejemplo +50688887777.
+export function telefonoInternacional(valor, etiqueta = 'El teléfono') {
+  const telefono = textoObligatorio(valor, etiqueta, 20).replace(/[\s-]/g, '');
+  if (!/^\+[1-9]\d{7,14}$/.test(telefono)) {
+    throw new ErrorHttp(400, `${etiqueta} debe estar en formato internacional, por ejemplo +50688887777.`);
+  }
+  return telefono;
+}
+
+// Código de 6 dígitos.
+export function codigoSeisDigitos(valor) {
+  const codigo = typeof valor === 'string' || typeof valor === 'number' ? String(valor).trim() : '';
+  if (!/^\d{6}$/.test(codigo)) throw new ErrorHttp(400, 'El código debe tener 6 dígitos.');
+  return codigo;
+}
+
+// Token de un enlace (recuperación o invitación).
+export function tokenDeEnlace(valor) {
+  if (typeof valor !== 'string' || !/^[A-Za-z0-9_-]{20,100}$/.test(valor)) {
+    throw new ErrorHttp(400, 'El enlace no es válido o ya expiró. Pida uno nuevo.');
+  }
+  return valor;
+}

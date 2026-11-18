@@ -1,30 +1,30 @@
-// Ficha de un producto (/productos/:id), con el estilo de la página de producto de una tienda:
-//   - Ruta de enlaces, imagen, código, nombre, precio y stock disponible.
+// Ficha de un producto del inventario (/admin/productos/:id), con el estilo de la página de producto de una tienda:
+//   - Ruta de enlaces, fotos (con el botón "Administrar fotos"), código, nombre, precio y stock disponible.
 //   - En lugar de "Agregar al carrito": Cantidad (− 1 +) y los botones
 //     "Registrar entrada" y "Registrar salida", que crean un movimiento real en la API.
 //   - Pestañas "Descripción" y "Movimientos" (historial de este producto).
 //   - "Productos similares" (misma categoría).
+// El movimiento lo registra la persona con la sesión abierta (el backend lo toma de la sesión).
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { motion } from 'motion/react';
 import toast from 'react-hot-toast';
-import { ArrowDownToLine, ArrowUpFromLine, Layers, Minus, PackageX, Plus, ShieldCheck, Truck } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, Images, Layers, Minus, PackageX, Plus, ShieldCheck, Truck } from 'lucide-react';
 import PaginaAnimada from '../components/PaginaAnimada.jsx';
 import MigasDePan from '../components/MigasDePan.jsx';
 import Boton from '../components/Boton.jsx';
-import CampoFormulario from '../components/CampoFormulario.jsx';
 import IndicadorStock from '../components/IndicadorStock.jsx';
 import TarjetaProducto from '../components/TarjetaProducto.jsx';
 import FilaDeslizable from '../components/FilaDeslizable.jsx';
 import { Cargando, ErrorCarga } from '../components/EstadoLista.jsx';
-import { obtenerProducto, listarProductos } from '../services/productosService.js';
+import { obtenerProducto, listarProductos, listarFotos } from '../services/productosService.js';
+import GaleriaProducto from '../components/GaleriaProducto.jsx';
+import ModalFotos from '../components/ModalFotos.jsx';
 import { listarMovimientos, crearMovimiento } from '../services/movimientosService.js';
-import { listarEmpleados } from '../services/empleadosService.js';
+import { useAutenticacion } from '../hooks/useAutenticacion.js';
 import { listarMateriales } from '../services/materialesService.js';
 import { obtenerConfiguracion } from '../services/configuracionService.js';
 import { fechaDeHoy, formatearFecha, formatearPrecio } from '../utils/formato.js';
-import IconoCategoria from '../components/IconoCategoria.jsx';
-import { fondoDeCategoria } from '../utils/fondosCategoria.js';
 
 const PESTANAS = [
   { id: 'descripcion', texto: 'Descripción' },
@@ -37,7 +37,9 @@ export default function ProductoDetallePage() {
   const [producto, setProducto] = useState(null);
   const [similares, setSimilares] = useState([]);
   const [movimientos, setMovimientos] = useState([]);
-  const [empleados, setEmpleados] = useState([]);
+  const [fotos, setFotos] = useState([]); // { archivo, es_de_medidas }: las de medidas siempre al final
+  const [fotosAbierto, setFotosAbierto] = useState(false);
+  const { usuario } = useAutenticacion();
   const [material, setMaterial] = useState(null);
   const [stockMaximo, setStockMaximo] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -46,24 +48,23 @@ export default function ProductoDetallePage() {
 
   // Formulario rápido de entrada/salida.
   const [cantidad, setCantidad] = useState(1);
-  const [idEmpleado, setIdEmpleado] = useState('');
   const [registrando, setRegistrando] = useState(null); // 'entrada' | 'salida' | null
   const [errorMovimiento, setErrorMovimiento] = useState('');
   const [pestana, setPestana] = useState('descripcion');
 
   useEffect(() => {
     let activo = true;
-    Promise.all([obtenerProducto(id), listarProductos(), listarMovimientos(), listarEmpleados(), listarMateriales(), obtenerConfiguracion()])
-      .then(([datosProducto, listaProductos, listaMovimientos, listaEmpleados, listaMateriales, configuracion]) => {
+    Promise.all([obtenerProducto(id), listarProductos(), listarMovimientos(), listarMateriales(), obtenerConfiguracion(), listarFotos(id)])
+      .then(([datosProducto, listaProductos, listaMovimientos, listaMateriales, configuracion, listaFotos]) => {
         if (!activo) return;
         setProducto(datosProducto);
+        setFotos(listaFotos);
         // Similares: misma categoría primero; si hay pocos, se completan con otros productos.
         const otros = listaProductos.filter((p) => p.id_producto !== datosProducto.id_producto);
         const mismaCategoria = otros.filter((p) => p.id_categoria === datosProducto.id_categoria);
         const resto = otros.filter((p) => p.id_categoria !== datosProducto.id_categoria);
         setSimilares([...mismaCategoria, ...resto].slice(0, 8));
         setMovimientos(listaMovimientos.filter((m) => m.id_producto === datosProducto.id_producto));
-        setEmpleados(listaEmpleados);
         setMaterial(listaMateriales.find((m) => m.id_material === datosProducto.id_material) ?? null);
         setStockMaximo(configuracion.stock_maximo);
         setErrorCarga(null);
@@ -93,7 +94,6 @@ export default function ProductoDetallePage() {
     try {
       const guardado = await crearMovimiento({
         id_producto: producto.id_producto,
-        id_empleado: idEmpleado === '' ? null : Number(idEmpleado),
         tipo,
         cantidad: cantidad === '' ? null : cantidad,
         fecha: fechaDeHoy(),
@@ -124,7 +124,7 @@ export default function ProductoDetallePage() {
     const noExiste = errorCarga.message === 'El producto no existe.' || errorCarga.message.startsWith('El ID');
     return (
       <PaginaAnimada>
-        <MigasDePan pasos={[{ texto: 'Inicio', ruta: '/' }, { texto: 'Productos', ruta: '/productos' }, { texto: 'No encontrado' }]} />
+        <MigasDePan pasos={[{ texto: 'Panel', ruta: '/admin' }, { texto: 'Productos', ruta: '/admin/productos' }, { texto: 'No encontrado' }]} />
         <div className="tarjeta">
           {noExiste ? (
             <div className="estado">
@@ -132,7 +132,7 @@ export default function ProductoDetallePage() {
               <p>
                 <strong>Este producto no existe o fue eliminado.</strong>
               </p>
-              <Link to="/productos">Volver al catálogo</Link>
+              <Link to="/admin/productos">Volver a productos</Link>
             </div>
           ) : (
             <ErrorCarga error={errorCarga} alReintentar={reintentar} />
@@ -143,24 +143,32 @@ export default function ProductoDetallePage() {
   }
 
   const ocupado = registrando !== null;
-  const opcionesEmpleados = empleados.map((e) => ({ valor: String(e.id_empleado), texto: `${e.nombre} (${e.puesto})` }));
 
   return (
     <PaginaAnimada>
       <MigasDePan
         pasos={[
-          { texto: 'Inicio', ruta: '/' },
-          { texto: 'Productos', ruta: '/productos' },
-          { texto: producto.nombre_categoria, ruta: `/productos?categoria=${producto.id_categoria}` },
+          { texto: 'Panel', ruta: '/admin' },
+          { texto: 'Productos', ruta: '/admin/productos' },
+          ...(producto.id_categoria_padre ? [{ texto: producto.nombre_categoria_padre, ruta: `/admin/productos?categoria=${producto.id_categoria_padre}` }] : []),
+          { texto: producto.nombre_categoria, ruta: `/admin/productos?categoria=${producto.id_categoria}` },
           { texto: producto.nombre }
         ]}
       />
 
       <div className="ficha">
-        <div className={`ficha-imagen ${fondoDeCategoria(producto.id_categoria)}`}>
-          <IconoCategoria nombre={producto.nombre_categoria} size={170} strokeWidth={1.1} aria-hidden="true" />
-          {producto.stock === 0 && <span className="producto-sello sello-agotado">Agotado</span>}
-        </div>
+        <GaleriaProducto
+          key={producto.id_producto}
+          producto={producto}
+          fotos={fotos.map((f) => f.archivo)}
+          medidas={fotos.filter((f) => f.es_de_medidas).map((f) => f.archivo)}
+          agotado={producto.stock === 0}
+          acciones={
+            <Boton variante="secundario" icono={Images} onClick={() => setFotosAbierto(true)} className="galeria-administrar">
+              Administrar fotos ({fotos.length})
+            </Boton>
+          }
+        />
 
         <div className="ficha-info">
           <p className="ficha-codigo">Código: {producto.codigo}</p>
@@ -179,6 +187,12 @@ export default function ProductoDetallePage() {
             <p>
               <Truck size={18} aria-hidden="true" /> Proveedor: {producto.nombre_proveedor}
             </p>
+            {/* El costo solo llega del backend si la sesión es de la dueña. */}
+            {'costo_unitario' in producto && (
+              <p>
+                <ShieldCheck size={18} aria-hidden="true" /> Costo unitario: {producto.costo_unitario === null ? 'sin registrar' : formatearPrecio(producto.costo_unitario)}
+              </p>
+            )}
           </div>
 
           <div className="ficha-movimiento">
@@ -204,20 +218,21 @@ export default function ProductoDetallePage() {
             </div>
             <p className="ficha-disponible">
               {producto.stock} unidades disponibles en stock (máximo {stockMaximo})
+              {producto.apartado > 0 && (
+                <>
+                  {' · '}
+                  <Link to="/pos/pedidos" className="texto-apartado">
+                    {producto.apartado} apartadas en pedidos de clientes
+                  </Link>{' '}
+                  (se pueden sacar {Math.max(producto.stock - producto.apartado, 0)})
+                </>
+              )}
             </p>
             <IndicadorStock stock={producto.stock} maximo={stockMaximo} />
 
-            <CampoFormulario
-              id="id_empleado"
-              etiqueta="Registrado por"
-              tipo="select"
-              valor={idEmpleado}
-              alCambiar={(_campo, valor) => setIdEmpleado(valor)}
-              opciones={opcionesEmpleados}
-              textoOpcionVacia="Seleccione un empleado"
-              obligatorio
-              disabled={ocupado}
-            />
+            <p className="ficha-registra">
+              Registrado por: <strong>{usuario?.nombre}</strong>
+            </p>
 
             {errorMovimiento && (
               <p className="alerta alerta-error" role="alert">
@@ -234,8 +249,8 @@ export default function ProductoDetallePage() {
               </Boton>
             </div>
             <p className="ficha-nota">
-              Para editar o eliminar movimientos use la página <Link to="/movimientos">Movimientos</Link>. Para editar el producto, use el lápiz de su tarjeta en{' '}
-              <Link to="/productos">Productos</Link>.
+              Para editar o eliminar movimientos use la página <Link to="/admin/movimientos">Movimientos</Link>. Para editar el producto, use el lápiz de su tarjeta en{' '}
+              <Link to="/admin/productos">Productos</Link>.
             </p>
           </div>
         </div>
@@ -321,6 +336,7 @@ export default function ProductoDetallePage() {
           ))}
         </FilaDeslizable>
       )}
+      <ModalFotos producto={fotosAbierto ? producto : null} alCerrar={() => setFotosAbierto(false)} alCambiar={setFotos} />
     </PaginaAnimada>
   );
 }

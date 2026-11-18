@@ -1,64 +1,87 @@
 {
   "categorias": [
-    { "id_categoria": 1, "nombre": "Aretes", "descripcion": "Argollas, topos y aretes colgantes" },
-    { "id_categoria": 2, "nombre": "Collares", "descripcion": "Cadenas, gargantillas y collares con dije" },
-    { "id_categoria": 3, "nombre": "Pulseras", "descripcion": "Pulseras rígidas, tejidas y de dijes" },
-    { "id_categoria": 4, "nombre": "Anillos", "descripcion": "Anillos ajustables y de talla fija" },
-    { "id_categoria": 5, "nombre": "Accesorios para el cabello", "descripcion": "Pinzas, scrunchies y diademas" }
+    {"id_categoria": 1, "nombre": "Aretes", "descripcion": "Argollas, topos y aretes colgantes"},
+    {"id_categoria": 2, "nombre": "Collares", "descripcion": "Cadenas, gargantillas y collares con dije"},
+    {"id_categoria": 3, "nombre": "Pulseras", "descripcion": "Pulseras rígidas, tejidas y de dijes"},
+    {"id_categoria": 4, "nombre": "Anillos", "descripcion": "Anillos ajustables y de talla fija"},
+    {"id_categoria": 5, "nombre": "Accesorios para el cabello", "descripcion": "Pinzas, scrunchies y diademas"}
   ],
   "proveedores": [
-    { "id_proveedor": 1, "nombre": "Brillos del Pacífico S.A.", "contacto": "Laura Méndez", "telefono": "2661-0001", "correo": "ventas@brillospacifico.example.com", "direccion": "Puntarenas centro, 100 m norte del muelle" },
-    { "id_proveedor": 2, "nombre": "Importadora Luna Plateada", "contacto": "Carlos Jiménez", "telefono": "2222-0002", "correo": "pedidos@lunaplateada.example.com", "direccion": "San José, avenida 2" },
-    { "id_proveedor": 3, "nombre": "Taller Artesanal Manos de Mar", "contacto": "Sofía Araya", "telefono": "8800-0003", "correo": "manosdemar@example.com", "direccion": "Esparza, barrio Marañonal" },
-    { "id_proveedor": 4, "nombre": "Distribuidora Encanto", "contacto": null, "telefono": "2440-0004", "correo": null, "direccion": "Alajuela" }
+    {"id_proveedor": 1, "nombre": "Brillos del Pacífico S.A.", "contacto": "Laura Méndez", "telefono": "2661-0001", "correo": "ventas@brillospacifico.example.com", "direccion": "Puntarenas centro, 100 m norte del muelle"},
+    {"id_proveedor": 2, "nombre": "Importadora Luna Plateada", "contacto": "Carlos Jiménez", "telefono": "2222-0002", "correo": "pedidos@lunaplateada.example.com", "direccion": "San José, avenida 2"},
+    {"id_proveedor": 3, "nombre": "Taller Artesanal Manos de Mar", "contacto": "Sofía Araya", "telefono": "8800-0003", "correo": "manosdemar@example.com", "direccion": "Esparza, barrio Marañonal"},
+    {"id_proveedor": 4, "nombre": "Distribuidora Encanto", "contacto": null, "telefono": "2440-0004", "correo": null, "direccion": "Alajuela"}
   ],
   "materiales": [
-    { "id_material": 1, "nombre": "Plata 925", "es_hipoalergenico": true, "descripcion": "Plata de ley; se limpia con paño suave" },
-    { "id_material": 2, "nombre": "Acero inoxidable 316L", "es_hipoalergenico": true, "descripcion": "No se oscurece ni causa alergias" },
-    { "id_material": 3, "nombre": "Chapa de oro", "es_hipoalergenico": false, "descripcion": "Base metálica con baño de oro" },
-    { "id_material": 4, "nombre": "Resina", "es_hipoalergenico": true, "descripcion": "Liviana y de colores" },
-    { "id_material": 5, "nombre": "Fantasía (aleación de zinc)", "es_hipoalergenico": false, "descripcion": "Económico; evitar el contacto con agua" },
-    { "id_material": 6, "nombre": "Hilo y tela", "es_hipoalergenico": true, "descripcion": "Hilo encerado, satín y elástico" }
+    {"id_material": 1, "nombre": "Plata 925", "es_hipoalergenico": true, "descripcion": "Plata de ley; se limpia con paño suave"},
+    {"id_material": 2, "nombre": "Acero inoxidable 316L", "es_hipoalergenico": true, "descripcion": "No se oscurece ni causa alergias"},
+    {"id_material": 3, "nombre": "Chapa de oro", "es_hipoalergenico": false, "descripcion": "Base metálica con baño de oro"},
+    {"id_material": 4, "nombre": "Resina", "es_hipoalergenico": true, "descripcion": "Liviana y de colores"},
+    {"id_material": 5, "nombre": "Fantasía (aleación de zinc)", "es_hipoalergenico": false, "descripcion": "Económico; evitar el contacto con agua"},
+    {"id_material": 6, "nombre": "Hilo y tela", "es_hipoalergenico": true, "descripcion": "Hilo encerado, satín y elástico"}
   ],
   "empleados": [
-    { "id_empleado": 1, "nombre": "Daniela Rojas", "puesto": "Dueña", "telefono": "8700-1001", "correo": "daniela.rojas@example.com" },
-    { "id_empleado": 2, "nombre": "Mariana Solís", "puesto": "Vendedora", "telefono": "8700-1002", "correo": "mariana.solis@example.com" },
-    { "id_empleado": 3, "nombre": "Andrés Vargas", "puesto": "Encargado de bodega", "telefono": null, "correo": "andres.vargas@example.com" }
+    {"id_empleado": 1, "nombre": "Daniela Rojas", "puesto": "Dueña", "telefono": "8700-1001", "correo": "daniela.rojas@example.com"},
+    {"id_empleado": 2, "nombre": "Mariana Solís", "puesto": "Vendedora", "telefono": "8700-1002", "correo": "mariana.solis@example.com"},
+    {"id_empleado": 3, "nombre": "Andrés Vargas", "puesto": "Encargado de bodega", "telefono": null, "correo": "andres.vargas@example.com"}
   ],
   "productos": [
-    { "id_producto": 1, "codigo": "ARE-001", "nombre": "Aretes argolla de plata", "descripcion": "Argolla pequeña de 15 mm", "precio": 8500, "id_categoria": 1, "id_proveedor": 2, "id_material": 1 },
-    { "id_producto": 2, "codigo": "ARE-002", "nombre": "Aretes perla de resina", "descripcion": "Topos con perla de colores", "precio": 4500, "id_categoria": 1, "id_proveedor": 3, "id_material": 4 },
-    { "id_producto": 3, "codigo": "COL-001", "nombre": "Collar corazón de acero", "descripcion": "Cadena de 45 cm con dije de corazón", "precio": 9500, "id_categoria": 2, "id_proveedor": 1, "id_material": 2 },
-    { "id_producto": 4, "codigo": "COL-002", "nombre": "Collar de conchas", "descripcion": "Hecho a mano con conchas de playa", "precio": 6000, "id_categoria": 2, "id_proveedor": 3, "id_material": 5 },
-    { "id_producto": 5, "codigo": "PUL-001", "nombre": "Pulsera de dijes dorada", "descripcion": "Cinco dijes intercambiables", "precio": 7500, "id_categoria": 3, "id_proveedor": 1, "id_material": 3 },
-    { "id_producto": 6, "codigo": "PUL-002", "nombre": "Pulsera tejida de hilo", "descripcion": null, "precio": 3000, "id_categoria": 3, "id_proveedor": 3, "id_material": 6 },
-    { "id_producto": 7, "codigo": "ANI-001", "nombre": "Anillo ajustable minimalista", "descripcion": "Talla ajustable", "precio": 5500, "id_categoria": 4, "id_proveedor": 2, "id_material": 2 },
-    { "id_producto": 8, "codigo": "CAB-001", "nombre": "Set de pinzas para cabello", "descripcion": "Paquete de 4 pinzas", "precio": 3500, "id_categoria": 5, "id_proveedor": 1, "id_material": 5 },
-    { "id_producto": 9, "codigo": "CAB-002", "nombre": "Scrunchie de satín", "descripcion": "Varios colores", "precio": 2000, "id_categoria": 5, "id_proveedor": 3, "id_material": 6 }
+    {"id_producto": 1, "codigo": "ARE-001", "nombre": "Aretes argolla de plata", "descripcion": "Argolla pequeña de 15 mm", "precio": 8500, "costo_unitario": 4200, "id_categoria": 1, "id_proveedor": 2, "id_material": 1},
+    {"id_producto": 2, "codigo": "ARE-002", "nombre": "Aretes perla de resina", "descripcion": "Topos con perla de colores", "precio": 4500, "costo_unitario": 1800, "id_categoria": 1, "id_proveedor": 3, "id_material": 4},
+    {"id_producto": 3, "codigo": "COL-001", "nombre": "Collar corazón de acero", "descripcion": "Cadena de 45 cm con dije de corazón", "precio": 9500, "costo_unitario": 4800, "id_categoria": 2, "id_proveedor": 1, "id_material": 2},
+    {"id_producto": 4, "codigo": "COL-002", "nombre": "Collar de conchas", "descripcion": "Hecho a mano con conchas de playa", "precio": 6000, "costo_unitario": 2500, "id_categoria": 2, "id_proveedor": 3, "id_material": 5},
+    {"id_producto": 5, "codigo": "PUL-001", "nombre": "Pulsera de dijes dorada", "descripcion": "Cinco dijes intercambiables", "precio": 7500, "costo_unitario": 3900, "id_categoria": 3, "id_proveedor": 1, "id_material": 3},
+    {"id_producto": 6, "codigo": "PUL-002", "nombre": "Pulsera tejida de hilo", "descripcion": null, "precio": 3000, "costo_unitario": 1100, "id_categoria": 3, "id_proveedor": 3, "id_material": 6},
+    {"id_producto": 7, "codigo": "ANI-001", "nombre": "Anillo ajustable minimalista", "descripcion": "Talla ajustable", "precio": 5500, "costo_unitario": null, "id_categoria": 4, "id_proveedor": 2, "id_material": 2},
+    {"id_producto": 8, "codigo": "CAB-001", "nombre": "Set de pinzas para cabello", "descripcion": "Paquete de 4 pinzas", "precio": 3500, "costo_unitario": 1500, "id_categoria": 5, "id_proveedor": 1, "id_material": 5},
+    {"id_producto": 9, "codigo": "CAB-002", "nombre": "Scrunchie de satín", "descripcion": "Varios colores", "precio": 2000, "costo_unitario": null, "id_categoria": 5, "id_proveedor": 3, "id_material": 6}
   ],
   "movimientos": [
-    { "id_movimiento": 1, "id_producto": 1, "id_empleado": 3, "tipo": "entrada", "cantidad": 30, "fecha": "2026-09-01", "motivo": "Compra inicial" },
-    { "id_movimiento": 2, "id_producto": 2, "id_empleado": 3, "tipo": "entrada", "cantidad": 40, "fecha": "2026-09-01", "motivo": "Compra inicial" },
-    { "id_movimiento": 3, "id_producto": 3, "id_empleado": 3, "tipo": "entrada", "cantidad": 25, "fecha": "2026-09-02", "motivo": "Compra inicial" },
-    { "id_movimiento": 4, "id_producto": 4, "id_empleado": 3, "tipo": "entrada", "cantidad": 15, "fecha": "2026-09-02", "motivo": "Compra inicial" },
-    { "id_movimiento": 5, "id_producto": 5, "id_empleado": 3, "tipo": "entrada", "cantidad": 20, "fecha": "2026-09-03", "motivo": "Compra inicial" },
-    { "id_movimiento": 6, "id_producto": 6, "id_empleado": 3, "tipo": "entrada", "cantidad": 60, "fecha": "2026-09-03", "motivo": "Compra inicial" },
-    { "id_movimiento": 7, "id_producto": 7, "id_empleado": 3, "tipo": "entrada", "cantidad": 12, "fecha": "2026-09-04", "motivo": "Compra inicial" },
-    { "id_movimiento": 8, "id_producto": 8, "id_empleado": 3, "tipo": "entrada", "cantidad": 35, "fecha": "2026-09-04", "motivo": "Compra inicial" },
-    { "id_movimiento": 9, "id_producto": 9, "id_empleado": 3, "tipo": "entrada", "cantidad": 50, "fecha": "2026-09-05", "motivo": "Compra inicial" },
-    { "id_movimiento": 10, "id_producto": 1, "id_empleado": 2, "tipo": "salida", "cantidad": 8, "fecha": "2026-09-15", "motivo": "Ventas de la quincena" },
-    { "id_movimiento": 11, "id_producto": 2, "id_empleado": 2, "tipo": "salida", "cantidad": 12, "fecha": "2026-09-15", "motivo": "Ventas de la quincena" },
-    { "id_movimiento": 12, "id_producto": 3, "id_empleado": 2, "tipo": "salida", "cantidad": 10, "fecha": "2026-09-16", "motivo": "Ventas de la quincena" },
-    { "id_movimiento": 13, "id_producto": 4, "id_empleado": 2, "tipo": "salida", "cantidad": 15, "fecha": "2026-09-18", "motivo": "Venta por mayor a una boutique" },
-    { "id_movimiento": 14, "id_producto": 9, "id_empleado": 2, "tipo": "salida", "cantidad": 20, "fecha": "2026-09-20", "motivo": "Feria del Día del Niño" },
-    { "id_movimiento": 15, "id_producto": 3, "id_empleado": 1, "tipo": "entrada", "cantidad": 10, "fecha": "2026-10-01", "motivo": "Reposición" },
-    { "id_movimiento": 16, "id_producto": 5, "id_empleado": 2, "tipo": "salida", "cantidad": 6, "fecha": "2026-10-03", "motivo": "Ventas en tienda" },
-    { "id_movimiento": 17, "id_producto": 6, "id_empleado": 1, "tipo": "entrada", "cantidad": 5, "fecha": "2026-10-05", "motivo": "Reposición" },
-    { "id_movimiento": 18, "id_producto": 7, "id_empleado": 2, "tipo": "salida", "cantidad": 3, "fecha": "2026-10-08", "motivo": "Ventas en tienda" },
-    { "id_movimiento": 19, "id_producto": 1, "id_empleado": 2, "tipo": "salida", "cantidad": 4, "fecha": "2026-10-10", "motivo": "Ventas en tienda" },
-    { "id_movimiento": 20, "id_producto": 8, "id_empleado": 2, "tipo": "salida", "cantidad": 9, "fecha": "2026-10-12", "motivo": "Ventas en tienda" },
-    { "id_movimiento": 21, "id_producto": 3, "id_empleado": 2, "tipo": "salida", "cantidad": 5, "fecha": "2026-10-20", "motivo": "Ventas en tienda" },
-    { "id_movimiento": 22, "id_producto": 9, "id_empleado": 1, "tipo": "entrada", "cantidad": 10, "fecha": "2026-10-25", "motivo": "Reposición" },
-    { "id_movimiento": 23, "id_producto": 2, "id_empleado": 1, "tipo": "salida", "cantidad": 1, "fecha": "2026-10-28", "motivo": "Pieza dañada" }
+    {"id_movimiento": 1, "id_producto": 1, "id_empleado": 3, "tipo": "entrada", "cantidad": 30, "fecha": "2026-09-01", "motivo": "Compra inicial"},
+    {"id_movimiento": 2, "id_producto": 2, "id_empleado": 3, "tipo": "entrada", "cantidad": 40, "fecha": "2026-09-01", "motivo": "Compra inicial"},
+    {"id_movimiento": 3, "id_producto": 3, "id_empleado": 3, "tipo": "entrada", "cantidad": 25, "fecha": "2026-09-02", "motivo": "Compra inicial"},
+    {"id_movimiento": 4, "id_producto": 4, "id_empleado": 3, "tipo": "entrada", "cantidad": 15, "fecha": "2026-09-02", "motivo": "Compra inicial"},
+    {"id_movimiento": 5, "id_producto": 5, "id_empleado": 3, "tipo": "entrada", "cantidad": 20, "fecha": "2026-09-03", "motivo": "Compra inicial"},
+    {"id_movimiento": 6, "id_producto": 6, "id_empleado": 3, "tipo": "entrada", "cantidad": 60, "fecha": "2026-09-03", "motivo": "Compra inicial"},
+    {"id_movimiento": 7, "id_producto": 7, "id_empleado": 3, "tipo": "entrada", "cantidad": 12, "fecha": "2026-09-04", "motivo": "Compra inicial"},
+    {"id_movimiento": 8, "id_producto": 8, "id_empleado": 3, "tipo": "entrada", "cantidad": 35, "fecha": "2026-09-04", "motivo": "Compra inicial"},
+    {"id_movimiento": 9, "id_producto": 9, "id_empleado": 3, "tipo": "entrada", "cantidad": 50, "fecha": "2026-09-05", "motivo": "Compra inicial"},
+    {"id_movimiento": 10, "id_producto": 1, "id_empleado": 2, "tipo": "salida", "cantidad": 8, "fecha": "2026-09-15", "motivo": "Ventas de la quincena"},
+    {"id_movimiento": 11, "id_producto": 2, "id_empleado": 2, "tipo": "salida", "cantidad": 12, "fecha": "2026-09-15", "motivo": "Ventas de la quincena"},
+    {"id_movimiento": 12, "id_producto": 3, "id_empleado": 2, "tipo": "salida", "cantidad": 10, "fecha": "2026-09-16", "motivo": "Ventas de la quincena"},
+    {"id_movimiento": 13, "id_producto": 4, "id_empleado": 2, "tipo": "salida", "cantidad": 15, "fecha": "2026-09-18", "motivo": "Venta por mayor a una boutique"},
+    {"id_movimiento": 14, "id_producto": 9, "id_empleado": 2, "tipo": "salida", "cantidad": 20, "fecha": "2026-09-20", "motivo": "Feria del Día del Niño"},
+    {"id_movimiento": 15, "id_producto": 3, "id_empleado": 1, "tipo": "entrada", "cantidad": 10, "fecha": "2026-10-01", "motivo": "Reposición"},
+    {"id_movimiento": 16, "id_producto": 5, "id_empleado": 2, "tipo": "salida", "cantidad": 6, "fecha": "2026-10-03", "motivo": "Ventas en tienda"},
+    {"id_movimiento": 17, "id_producto": 6, "id_empleado": 1, "tipo": "entrada", "cantidad": 5, "fecha": "2026-10-05", "motivo": "Reposición"},
+    {"id_movimiento": 18, "id_producto": 7, "id_empleado": 2, "tipo": "salida", "cantidad": 3, "fecha": "2026-10-08", "motivo": "Ventas en tienda"},
+    {"id_movimiento": 19, "id_producto": 1, "id_empleado": 2, "tipo": "salida", "cantidad": 4, "fecha": "2026-10-10", "motivo": "Ventas en tienda"},
+    {"id_movimiento": 20, "id_producto": 8, "id_empleado": 2, "tipo": "salida", "cantidad": 9, "fecha": "2026-10-12", "motivo": "Ventas en tienda"},
+    {"id_movimiento": 21, "id_producto": 3, "id_empleado": 2, "tipo": "salida", "cantidad": 5, "fecha": "2026-10-20", "motivo": "Ventas en tienda"},
+    {"id_movimiento": 22, "id_producto": 9, "id_empleado": 1, "tipo": "entrada", "cantidad": 10, "fecha": "2026-10-25", "motivo": "Reposición"},
+    {"id_movimiento": 23, "id_producto": 2, "id_empleado": 1, "tipo": "salida", "cantidad": 1, "fecha": "2026-10-28", "motivo": "Pieza dañada"}
+  ],
+  "usuarios": [
+    {"correo": "mariana.solis@example.com", "rol": "ventas", "id_empleado": 2, "nota": "Invitación pendiente: sin contraseña"},
+    {"correo": "andres.vargas@example.com", "rol": "administrador", "id_empleado": 3, "nota": "Invitación pendiente: sin contraseña"},
+    {"correo": "ventas@brillospacifico.example.com", "rol": "proveedor", "id_proveedor": 1, "nota": "Invitación pendiente: sin contraseña"},
+    {"correo": "manosdemar@example.com", "rol": "proveedor", "id_proveedor": 3, "nota": "Invitación pendiente: sin contraseña"}
+  ],
+  "clientes": [
+    {"correo": "camila.mora@example.com", "nombre": "Camila Mora", "direccion": "Barrio El Carmen, Puntarenas", "telefono": null},
+    {"correo": "jose.arias@example.com", "nombre": "José Arias", "direccion": null, "telefono": null}
+  ],
+  "ventas": [
+    {"clave_idempotencia": "5e0c8a4e-0001-4c6b-9a8e-000000000001", "correo_vendedor": "mariana.solis@example.com", "correo_cliente": "camila.mora@example.com", "fecha": "2026-10-30 10:15:00", "nota": null, "items": [{"id_producto": 1, "cantidad": 2}, {"id_producto": 9, "cantidad": 3}]},
+    {"clave_idempotencia": "5e0c8a4e-0002-4c6b-9a8e-000000000002", "correo_vendedor": "mariana.solis@example.com", "correo_cliente": null, "fecha": "2026-11-01 15:40:00", "nota": "Venta en mostrador", "items": [{"id_producto": 7, "cantidad": 5}, {"id_producto": 3, "cantidad": 1}]},
+    {"clave_idempotencia": "5e0c8a4e-0003-4c6b-9a8e-000000000003", "correo_vendedor": "mariana.solis@example.com", "correo_cliente": "camila.mora@example.com", "fecha": "2026-11-03 11:05:00", "nota": null, "items": [{"id_producto": 5, "cantidad": 2}, {"id_producto": 8, "cantidad": 1}, {"id_producto": 2, "cantidad": 4}]},
+    {"clave_idempotencia": "5e0c8a4e-0004-4c6b-9a8e-000000000004", "correo_vendedor": "andres.vargas@example.com", "correo_cliente": "jose.arias@example.com", "fecha": "2026-11-04 17:20:00", "nota": null, "items": [{"id_producto": 6, "cantidad": 6}]}
+  ],
+  "devoluciones": [
+    {"id_devolucion": 1, "clave_venta": "5e0c8a4e-0003-4c6b-9a8e-000000000003", "correo_usuario": "mariana.solis@example.com", "fecha": "2026-11-04 09:30:00", "motivo": "Un par de aretes llegó con el broche flojo", "items": [{"id_producto": 2, "cantidad": 1}]}
+  ],
+  "solicitudes_abastecimiento": [
+    {"id_solicitud": 1, "id_proveedor": 1, "correo_creador": "andres.vargas@example.com", "nota_tienda": "Reposición para la temporada navideña", "items": [{"id_producto": 3, "cantidad": 15}, {"id_producto": 8, "cantidad": 10}]},
+    {"id_solicitud": 2, "id_proveedor": 3, "correo_creador": "andres.vargas@example.com", "nota_tienda": "Collares de conchas agotados", "items": [{"id_producto": 4, "cantidad": 12}]}
   ]
 }
